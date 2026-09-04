@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Хоккей">
+<meta name="theme-color" content="#04050a">
+<meta name="color-scheme" content="dark light">
+<title>Аэрохоккей на двоих</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body class="theme-void">
+
+<div id="safe-probe" aria-hidden="true"></div>
+<canvas id="game"></canvas>
+
+<!-- кнопки паузы: одна для нижнего игрока, одна перевёрнутая для верхнего -->
+<!-- Одна кнопка паузы, в нижней мёртвой зоне: сверху её некуда поставить,
+     не задев часы или батарею — в веб-версии статус-бар не прячется. -->
+<button class="pause-btn" id="pause-bottom" aria-label="Пауза"><span class="pause-glyph"></span></button>
+
+<div id="overlays">
+
+  <!-- СТАРТ -->
+  <section class="screen" id="screen-start" data-open>
+    <div class="half top">
+      <div class="block">
+        <h1 class="title">АЭРОХОККЕЙ</h1>
+        <p class="sub" data-mode-label>до 7 голов</p>
+        <p class="hint">коснитесь, чтобы начать</p>
+      </div>
+    </div>
+    <div class="half bottom">
+      <div class="block">
+        <h1 class="title">АЭРОХОККЕЙ</h1>
+        <p class="sub" data-mode-label>до 7 голов</p>
+        <p class="hint">коснитесь, чтобы начать</p>
+      </div>
+    </div>
+    <button class="gear" id="open-settings" aria-label="Настройки"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2zm0 5.7a2.1 2.1 0 1 1 0-4.2 2.1 2.1 0 0 1 0 4.2z"/><path d="M20.6 13.6l-1.4-.8a7.5 7.5 0 0 0 0-1.6l1.4-.8a.9.9 0 0 0 .35-1.2l-1.5-2.6a.9.9 0 0 0-1.2-.35l-1.4.8a7.4 7.4 0 0 0-1.4-.8V4.6a.9.9 0 0 0-.9-.9h-3a.9.9 0 0 0-.9.9v1.65c-.5.2-.97.47-1.4.8l-1.4-.8a.9.9 0 0 0-1.2.35l-1.5 2.6a.9.9 0 0 0 .35 1.2l1.4.8a7.5 7.5 0 0 0 0 1.6l-1.4.8a.9.9 0 0 0-.35 1.2l1.5 2.6a.9.9 0 0 0 1.2.35l1.4-.8c.43.33.9.6 1.4.8v1.65a.9.9 0 0 0 .9.9h3a.9.9 0 0 0 .9-.9V17.8c.5-.2.97-.47 1.4-.8l1.4.8a.9.9 0 0 0 1.2-.35l1.5-2.6a.9.9 0 0 0-.35-1.2z" opacity=".55"/></svg></button>
+  </section>
+
+  <!-- ПАУЗА -->
+  <section class="screen panel-screen" id="screen-pause">
+    <div class="panel">
+      <h2 class="panel-title">Пауза</h2>
+      <div class="row-btns">
+        <button class="btn primary" id="resume">Продолжить</button>
+        <button class="btn" id="restart">Заново</button>
+      </div>
+      <button class="btn ghost" id="to-settings">Настройки</button>
+    </div>
+  </section>
+
+  <!-- НАСТРОЙКИ -->
+  <section class="screen panel-screen" id="screen-settings">
+    <div class="panel scroll">
+      <h2 class="panel-title">Настройки</h2>
+
+      <div class="group">
+        <div class="group-title">Оформление</div>
+        <div class="seg" id="set-theme" role="radiogroup">
+          <button class="seg-i" data-v="void">Void</button>
+          <button class="seg-i" data-v="ink">Ink</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-title">Режим матча</div>
+        <div class="seg" id="set-mode" role="radiogroup">
+          <button class="seg-i" data-v="goals">До N голов</button>
+          <button class="seg-i" data-v="time">На время</button>
+        </div>
+        <div class="seg sub-seg" id="set-goals" role="radiogroup">
+          <button class="seg-i" data-v="3">3</button>
+          <button class="seg-i" data-v="5">5</button>
+          <button class="seg-i" data-v="7">7</button>
+          <button class="seg-i" data-v="10">10</button>
+        </div>
+        <div class="seg sub-seg" id="set-minutes" role="radiogroup">
+          <button class="seg-i" data-v="2">2 мин</button>
+          <button class="seg-i" data-v="3">3 мин</button>
+          <button class="seg-i" data-v="5">5 мин</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-title">Скорость шайбы</div>
+        <div class="seg" id="set-speed" role="radiogroup">
+          <button class="seg-i" data-v="slow">Спокойно</button>
+          <button class="seg-i" data-v="normal">Обычно</button>
+          <button class="seg-i" data-v="fast">Быстро</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-title">Эффекты</div>
+        <label class="sw-row"><span>Все эффекты</span><input type="checkbox" class="sw" id="set-fx-master"></label>
+        <label class="sw-row"><span>Звук</span><input type="checkbox" class="sw" id="set-sound"></label>
+        <label class="sw-row"><span>Вибрация<em id="haptic-note"></em></span><input type="checkbox" class="sw" id="set-haptics"></label>
+        <label class="sw-row"><span>Шлейф шайбы</span><input type="checkbox" class="sw" id="set-trail"></label>
+        <label class="sw-row"><span>Вспышки от ударов</span><input type="checkbox" class="sw" id="set-flash"></label>
+        <label class="sw-row"><span>Тряска при голе</span><input type="checkbox" class="sw" id="set-shake"></label>
+        <button class="btn ghost small" id="test-haptic">Проверить вибрацию</button>
+      </div>
+
+      <button class="btn primary wide" id="close-settings">Готово</button>
+    </div>
+  </section>
+
+  <!-- ГОЛ -->
+  <section class="screen pass" id="screen-goal">
+    <div class="half top"><div class="goal-word" id="goal-word-top"></div></div>
+    <div class="half bottom"><div class="goal-word" id="goal-word-bottom"></div></div>
+  </section>
+
+  <!-- ИТОГ -->
+  <section class="screen" id="screen-end">
+    <div class="half top">
+      <div class="block">
+        <h1 class="title" id="end-title-top"></h1>
+        <p class="score-line" id="end-score-top"></p>
+        <button class="btn primary rematch">Реванш</button>
+      </div>
+    </div>
+    <div class="half bottom">
+      <div class="block">
+        <h1 class="title" id="end-title-bottom"></h1>
+        <p class="score-line" id="end-score-bottom"></p>
+        <button class="btn primary rematch">Реванш</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ПОВЕРНИТЕ -->
+  <section class="screen" id="screen-rotate">
+    <div class="block center-block">
+      <div class="rotate-icon"></div>
+      <p class="sub">Поверните телефон вертикально</p>
+    </div>
+  </section>
+
+</div>
+
+<label id="haptic-label" for="haptic-input" aria-hidden="true"><input id="haptic-input" type="checkbox" switch tabindex="-1"></label>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

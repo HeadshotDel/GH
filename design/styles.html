@@ -1,0 +1,231 @@
+<meta charset="utf-8">
+<title>Air Hockey — варианты оформления</title>
+<style>
+  :root{
+    --ink:#12141a; --mut:#6b7280; --line:#e3e5ea; --bg:#f6f7f9; --card:#fff;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --ink:#eceef3; --mut:#9aa1ad; --line:#272b33; --bg:#0d0f13; --card:#14171d; }
+  }
+  html,body{background:var(--bg);color:var(--ink)}
+  body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;padding:28px 24px 48px}
+  h1{font-size:19px;margin:0 0 6px;letter-spacing:-.01em}
+  .sub{color:var(--mut);margin:0 0 24px;max-width:78ch;font-size:13px}
+  .row{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
+  figure{margin:0;width:244px}
+  .dev{width:244px;height:528px;border-radius:34px;overflow:hidden;background:#000;
+       box-shadow:0 0 0 3px #23262c, 0 14px 34px rgba(0,0,0,.34)}
+  .dev svg{display:block;width:100%;height:100%}
+  figcaption{margin-top:12px}
+  figcaption b{display:block;font-size:13px;letter-spacing:.02em}
+  figcaption span{display:block;color:var(--mut);font-size:12px;margin-top:3px}
+  .tag{display:inline-block;margin-top:7px;font-size:11px;color:var(--mut);border:1px solid var(--line);
+       border-radius:999px;padding:2px 8px}
+</style>
+
+<h1>Air Hockey — 4 варианта визуала</h1>
+<p class="sub">iPhone 15&nbsp;Pro, портрет, масштаб 62%. Чёрная «пилюля» сверху — настоящий Dynamic Island, он же ворота верхнего игрока; снизу нарисован её зеркальный близнец. Часы и батарея показаны так, как их будет видно в веб-версии на домашнем экране. Счёт 3:5, шайба летит к верхним воротам.</p>
+<div class="row" id="row"></div>
+
+<script>
+const W=393,H=852;
+const ISL={x:134,y:11,w:125,h:36.67,r:18.34};
+const BP ={x:134,y:804.33,w:125,h:36.67,r:18.34};
+const TOP=60,BOT=792,GX0=134,GX1=259,CY=426;
+const P1={x:168,y:196},P2={x:236,y:648},PR=36;
+const PUCK={x:252,y:496},KR=23;
+const TRAIL=[[268,540,20],[284,584,17],[299,626,13],[312,664,9]];
+
+function homeInd(c,o){return `<rect x="127" y="839" width="139" height="5" rx="2.5" fill="${c}" opacity="${o}"/>`}
+function clock(c,o){return `<g fill="${c}" opacity="${o}">
+  <text x="64" y="35" font-family="-apple-system,system-ui" font-size="17" font-weight="600" text-anchor="middle">9:41</text>
+  <path d="M312 24 l4 7 4-7 a11 11 0 0 0 -8 0z" opacity=".85"/>
+  <rect x="330" y="22" width="22" height="11" rx="3.4" fill="none" stroke="${c}" stroke-width="1.2" opacity=".55"/>
+  <rect x="331.6" y="23.6" width="16" height="7.8" rx="2.1"/>
+  <rect x="353.4" y="25.6" width="1.6" height="3.8" rx=".8" opacity=".55"/></g>`}
+
+/* ============================== A — VOID ============================== */
+function voidTheme(){
+ const c1="#ff2d8a", c2="#00e0ff";
+ return `<defs>
+   <linearGradient id="aF" x1="0" y1="0" x2="0" y2="1">
+     <stop offset="0" stop-color="#0a0f1c"/><stop offset=".5" stop-color="#05070e"/><stop offset="1" stop-color="#0a0f1c"/></linearGradient>
+   <filter id="aG" x="-70%" y="-70%" width="240%" height="240%">
+     <feGaussianBlur stdDeviation="7" result="b"/><feMerge>
+     <feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+   <filter id="aGs" x="-70%" y="-70%" width="240%" height="240%">
+     <feGaussianBlur stdDeviation="3" result="b"/><feMerge>
+     <feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+   <radialGradient id="aP1"><stop offset=".45" stop-color="${c1}" stop-opacity="0"/><stop offset="1" stop-color="${c1}" stop-opacity=".42"/></radialGradient>
+   <radialGradient id="aP2"><stop offset=".45" stop-color="${c2}" stop-opacity="0"/><stop offset="1" stop-color="${c2}" stop-opacity=".42"/></radialGradient>
+   <linearGradient id="aGoal1" x1="0" y1="1" x2="0" y2="0">
+     <stop offset="0" stop-color="${c1}" stop-opacity="0"/><stop offset="1" stop-color="${c1}" stop-opacity=".55"/></linearGradient>
+   <linearGradient id="aGoal2" x1="0" y1="0" x2="0" y2="1">
+     <stop offset="0" stop-color="${c2}" stop-opacity="0"/><stop offset="1" stop-color="${c2}" stop-opacity=".55"/></linearGradient>
+   <radialGradient id="aVig"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
+ </defs>
+ <rect width="${W}" height="${H}" fill="#04050a"/>
+ <rect x="0" y="${TOP}" width="${W}" height="${BOT-TOP}" fill="url(#aF)"/>
+ ${[...Array(9)].map((_,i)=>`<line x1="${(i+1)*39.3}" y1="${TOP}" x2="${(i+1)*39.3}" y2="${BOT}" stroke="#fff" stroke-opacity=".028"/>`).join('')}
+ ${[...Array(17)].map((_,i)=>`<line x1="0" y1="${TOP+(i+1)*40.6}" x2="${W}" y2="${TOP+(i+1)*40.6}" stroke="#fff" stroke-opacity=".028"/>`).join('')}
+ <line x1="0" y1="${CY}" x2="${W}" y2="${CY}" stroke="#fff" stroke-opacity=".13"/>
+ <circle cx="196.5" cy="${CY}" r="72" fill="none" stroke="#fff" stroke-opacity=".10" stroke-width="1.4"/>
+ <circle cx="196.5" cy="${CY}" r="4" fill="#fff" fill-opacity=".18"/>
+ <rect x="${GX0}" y="${TOP}" width="${GX1-GX0}" height="52" fill="url(#aGoal1)"/>
+ <rect x="${GX0}" y="${BOT-52}" width="${GX1-GX0}" height="52" fill="url(#aGoal2)"/>
+ <g filter="url(#aGs)">
+   <line x1="0" y1="${TOP}" x2="${GX0}" y2="${TOP}" stroke="${c1}" stroke-width="2.4" stroke-opacity=".7"/>
+   <line x1="${GX1}" y1="${TOP}" x2="${W}" y2="${TOP}" stroke="${c1}" stroke-width="2.4" stroke-opacity=".7"/>
+   <line x1="0" y1="${BOT}" x2="${GX0}" y2="${BOT}" stroke="${c2}" stroke-width="2.4" stroke-opacity=".7"/>
+   <line x1="${GX1}" y1="${BOT}" x2="${W}" y2="${BOT}" stroke="${c2}" stroke-width="2.4" stroke-opacity=".7"/>
+ </g>
+ <rect x="${BP.x}" y="${BP.y}" width="${BP.w}" height="${BP.h}" rx="${BP.r}" fill="#000" stroke="${c2}" stroke-width="2" stroke-opacity=".6"/>
+ <g transform="rotate(180 46 132)"><text x="46" y="132" fill="${c1}" fill-opacity=".85" font-family="-apple-system,system-ui" font-size="46" font-weight="200" text-anchor="middle" letter-spacing="1">3</text></g>
+ <text x="347" y="726" fill="${c2}" fill-opacity=".85" font-family="-apple-system,system-ui" font-size="46" font-weight="200" text-anchor="middle" letter-spacing="1">5</text>
+ ${TRAIL.map((t,i)=>`<circle cx="${t[0]}" cy="${t[1]}" r="${t[2]}" fill="#fff" opacity="${.20-i*.045}"/>`).join('')}
+ <g filter="url(#aG)"><circle cx="${P1.x}" cy="${P1.y}" r="${PR}" fill="none" stroke="${c1}" stroke-width="3.2"/>
+ <circle cx="${P2.x}" cy="${P2.y}" r="${PR}" fill="none" stroke="${c2}" stroke-width="3.2"/>
+ <circle cx="${PUCK.x}" cy="${PUCK.y}" r="${KR}" fill="#fff"/></g>
+ <circle cx="${P1.x}" cy="${P1.y}" r="${PR}" fill="url(#aP1)"/>
+ <circle cx="${P2.x}" cy="${P2.y}" r="${PR}" fill="url(#aP2)"/>
+ <rect x="${ISL.x}" y="${ISL.y}" width="${ISL.w}" height="${ISL.h}" rx="${ISL.r}" fill="#000"/>
+ ${clock("#fff",".55")}${homeInd("#fff",".28")}
+ <rect width="${W}" height="${H}" fill="url(#aVig)"/>`;
+}
+
+/* ============================== B — GLASS ============================== */
+function glassTheme(){
+ const c1="#f0508c", c2="#1fb6c9";
+ return `<defs>
+   <filter id="bBlur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="70"/></filter>
+   <radialGradient id="bPad1"><stop offset="0" stop-color="#fff" stop-opacity=".92"/><stop offset=".62" stop-color="#fff" stop-opacity=".34"/><stop offset="1" stop-color="${c1}" stop-opacity=".42"/></radialGradient>
+   <radialGradient id="bPad2"><stop offset="0" stop-color="#fff" stop-opacity=".92"/><stop offset=".62" stop-color="#fff" stop-opacity=".34"/><stop offset="1" stop-color="${c2}" stop-opacity=".42"/></radialGradient>
+   <linearGradient id="bPuck" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a5060"/><stop offset="1" stop-color="#20242f"/></linearGradient>
+   <filter id="bSh" x="-60%" y="-60%" width="220%" height="220%">
+     <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#1a2030" flood-opacity=".26"/></filter>
+   <linearGradient id="bGoal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3040" stop-opacity=".30"/><stop offset="1" stop-color="#2a3040" stop-opacity="0"/></linearGradient>
+ </defs>
+ <rect width="${W}" height="${H}" fill="#eaeef6"/>
+ <g filter="url(#bBlur)" opacity=".95">
+   <circle cx="60" cy="120" r="180" fill="#7c8cf8"/>
+   <circle cx="360" cy="300" r="200" fill="#5fd6d0"/>
+   <circle cx="70" cy="640" r="210" fill="#f7a8c8"/>
+   <circle cx="330" cy="820" r="190" fill="#a89bf5"/>
+ </g>
+ <rect x="0" y="${TOP}" width="${W}" height="${BOT-TOP}" fill="#fff" fill-opacity=".46"/>
+ <line x1="0" y1="${TOP}" x2="${W}" y2="${TOP}" stroke="#fff" stroke-opacity=".85" stroke-width="1.6"/>
+ <line x1="0" y1="${BOT}" x2="${W}" y2="${BOT}" stroke="#fff" stroke-opacity=".85" stroke-width="1.6"/>
+ <line x1="0" y1="${CY}" x2="${W}" y2="${CY}" stroke="#fff" stroke-opacity=".95" stroke-width="1.6"/>
+ <circle cx="196.5" cy="${CY}" r="72" fill="#fff" fill-opacity=".16" stroke="#fff" stroke-opacity=".8" stroke-width="1.6"/>
+ <rect x="${GX0}" y="${TOP}" width="${GX1-GX0}" height="46" fill="url(#bGoal)"/>
+ <g transform="rotate(180 196.5 ${BOT-23})"><rect x="${GX0}" y="${BOT-46}" width="${GX1-GX0}" height="46" fill="url(#bGoal)"/></g>
+ <rect x="${GX0}" y="${TOP-1.5}" width="${GX1-GX0}" height="3" fill="${c1}" opacity=".8" rx="1.5"/>
+ <rect x="${GX0}" y="${BOT-1.5}" width="${GX1-GX0}" height="3" fill="${c2}" opacity=".8" rx="1.5"/>
+ <rect x="${BP.x}" y="${BP.y}" width="${BP.w}" height="${BP.h}" rx="${BP.r}" fill="#000"/>
+ <g transform="rotate(180 46 132)"><text x="46" y="132" fill="#252b38" fill-opacity=".5" font-family="-apple-system,system-ui" font-size="46" font-weight="600" text-anchor="middle">3</text></g>
+ <text x="347" y="726" fill="#252b38" fill-opacity=".5" font-family="-apple-system,system-ui" font-size="46" font-weight="600" text-anchor="middle">5</text>
+ ${TRAIL.map((t,i)=>`<circle cx="${t[0]}" cy="${t[1]}" r="${t[2]}" fill="#3a4152" opacity="${.14-i*.03}"/>`).join('')}
+ <g filter="url(#bSh)">
+   <circle cx="${P1.x}" cy="${P1.y}" r="${PR}" fill="url(#bPad1)" stroke="${c1}" stroke-width="2" stroke-opacity=".55"/>
+   <circle cx="${P2.x}" cy="${P2.y}" r="${PR}" fill="url(#bPad2)" stroke="${c2}" stroke-width="2" stroke-opacity=".55"/>
+   <circle cx="${PUCK.x}" cy="${PUCK.y}" r="${KR}" fill="url(#bPuck)"/>
+ </g>
+ <ellipse cx="${P1.x-11}" cy="${P1.y-14}" rx="13" ry="8" fill="#fff" opacity=".75" transform="rotate(-28 ${P1.x-11} ${P1.y-14})"/>
+ <ellipse cx="${P2.x-11}" cy="${P2.y-14}" rx="13" ry="8" fill="#fff" opacity=".75" transform="rotate(-28 ${P2.x-11} ${P2.y-14})"/>
+ <ellipse cx="${PUCK.x-6}" cy="${PUCK.y-9}" rx="8" ry="4.5" fill="#fff" opacity=".38" transform="rotate(-30 ${PUCK.x-6} ${PUCK.y-9})"/>
+ <rect x="${ISL.x}" y="${ISL.y}" width="${ISL.w}" height="${ISL.h}" rx="${ISL.r}" fill="#000"/>
+ ${clock("#232a38",".72")}${homeInd("#232a38",".35")}`;
+}
+
+/* ============================== C — CRT ============================== */
+function crtTheme(){
+ const c1="#ffb400", c2="#4dff6a";
+ return `<defs>
+   <pattern id="cScan" width="4" height="3" patternUnits="userSpaceOnUse"><rect width="4" height="1.3" fill="#000" opacity=".34"/></pattern>
+   <pattern id="cDot" width="26" height="26" patternUnits="userSpaceOnUse"><circle cx="13" cy="13" r="1" fill="${c2}" opacity=".16"/></pattern>
+   <filter id="cG" x="-80%" y="-80%" width="260%" height="260%">
+     <feGaussianBlur stdDeviation="6" result="b"/><feMerge>
+     <feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+   <radialGradient id="cVig"><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".72"/></radialGradient>
+ </defs>
+ <rect width="${W}" height="${H}" fill="#050b05"/>
+ <rect x="0" y="${TOP}" width="${W}" height="${BOT-TOP}" fill="#07140a"/>
+ <rect x="0" y="${TOP}" width="${W}" height="${BOT-TOP}" fill="url(#cDot)"/>
+ <g filter="url(#cG)">
+   <line x1="0" y1="${CY}" x2="${W}" y2="${CY}" stroke="${c2}" stroke-width="1.6" stroke-opacity=".45" stroke-dasharray="9 7"/>
+   <circle cx="196.5" cy="${CY}" r="72" fill="none" stroke="${c2}" stroke-width="1.6" stroke-opacity=".38" stroke-dasharray="7 9"/>
+   <line x1="0" y1="${TOP+1}" x2="${GX0}" y2="${TOP+1}" stroke="${c1}" stroke-width="3"/>
+   <line x1="${GX1}" y1="${TOP+1}" x2="${W}" y2="${TOP+1}" stroke="${c1}" stroke-width="3"/>
+   <line x1="0" y1="${BOT-1}" x2="${GX0}" y2="${BOT-1}" stroke="${c2}" stroke-width="3"/>
+   <line x1="${GX1}" y1="${BOT-1}" x2="${W}" y2="${BOT-1}" stroke="${c2}" stroke-width="3"/>
+   <line x1="${GX0+6}" y1="${TOP+5}" x2="${GX1-6}" y2="${TOP+5}" stroke="${c1}" stroke-width="2" stroke-dasharray="4 6" opacity=".8"/>
+   <line x1="${GX0+6}" y1="${BOT-5}" x2="${GX1-6}" y2="${BOT-5}" stroke="${c2}" stroke-width="2" stroke-dasharray="4 6" opacity=".8"/>
+ </g>
+ <rect x="${BP.x}" y="${BP.y}" width="${BP.w}" height="${BP.h}" rx="${BP.r}" fill="#000" stroke="${c2}" stroke-width="2" stroke-opacity=".65"/>
+ <g filter="url(#cG)">
+   <g transform="rotate(180 54 138)"><text x="54" y="138" fill="${c1}" font-family="ui-monospace,Menlo,monospace" font-size="44" font-weight="700" text-anchor="middle">03</text></g>
+   <text x="339" y="730" fill="${c2}" font-family="ui-monospace,Menlo,monospace" font-size="44" font-weight="700" text-anchor="middle">05</text>
+ </g>
+ ${TRAIL.map((t,i)=>`<circle cx="${t[0]}" cy="${t[1]}" r="${t[2]}" fill="${c1}" opacity="${.26-i*.055}"/>`).join('')}
+ <g filter="url(#cG)">
+   <circle cx="${P1.x}" cy="${P1.y}" r="${PR}" fill="none" stroke="${c1}" stroke-width="4"/>
+   <circle cx="${P1.x}" cy="${P1.y}" r="${PR-12}" fill="none" stroke="${c1}" stroke-width="1.6" stroke-opacity=".5"/>
+   <circle cx="${P2.x}" cy="${P2.y}" r="${PR}" fill="none" stroke="${c2}" stroke-width="4"/>
+   <circle cx="${P2.x}" cy="${P2.y}" r="${PR-12}" fill="none" stroke="${c2}" stroke-width="1.6" stroke-opacity=".5"/>
+   <circle cx="${PUCK.x}" cy="${PUCK.y}" r="${KR}" fill="#fffbe6"/>
+ </g>
+ <rect x="${ISL.x}" y="${ISL.y}" width="${ISL.w}" height="${ISL.h}" rx="${ISL.r}" fill="#000"/>
+ ${clock(c2,".5")}${homeInd(c2,".3")}
+ <rect width="${W}" height="${H}" fill="url(#cScan)"/>
+ <rect width="${W}" height="${H}" fill="url(#cVig)"/>`;
+}
+
+/* ============================== D — INK ============================== */
+function inkTheme(){
+ const c1="#f4511e", c2="#1f3fd8";
+ return `<defs>
+   <filter id="dGrain"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="3"/><feColorMatrix type="saturate" values="0"/></filter>
+   <pattern id="dHt1" width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="2.5" cy="2.5" r="1.7" fill="${c1}"/></pattern>
+   <pattern id="dHt2" width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="2.5" cy="2.5" r="1.7" fill="${c2}"/></pattern>
+ </defs>
+ <rect width="${W}" height="${H}" fill="#efe9dc"/>
+ <rect x="0" y="${TOP}" width="${W}" height="${BOT-TOP}" fill="#f7f2e7"/>
+ <rect x="0" y="${TOP}" width="${W}" height="${BOT-TOP}" fill="none" stroke="#111" stroke-width="6"/>
+ <line x1="0" y1="${CY}" x2="${W}" y2="${CY}" stroke="#111" stroke-width="4"/>
+ <circle cx="196.5" cy="${CY}" r="72" fill="none" stroke="#111" stroke-width="4"/>
+ <circle cx="196.5" cy="${CY}" r="6" fill="#111"/>
+ <rect x="${GX0-4}" y="${TOP-6}" width="${GX1-GX0+8}" height="16" fill="#111"/>
+ <rect x="${GX0-4}" y="${BOT-10}" width="${GX1-GX0+8}" height="16" fill="#111"/>
+ <rect x="${GX0}" y="${TOP+10}" width="${GX1-GX0}" height="26" fill="url(#dHt1)" opacity=".55"/>
+ <rect x="${GX0}" y="${BOT-36}" width="${GX1-GX0}" height="26" fill="url(#dHt2)" opacity=".55"/>
+ <rect x="${BP.x}" y="${BP.y}" width="${BP.w}" height="${BP.h}" rx="${BP.r}" fill="#111"/>
+ <g transform="rotate(180 46 136)"><text x="46" y="136" fill="${c1}" font-family="-apple-system,system-ui" font-size="54" font-weight="800" text-anchor="middle">3</text></g>
+ <text x="347" y="730" fill="${c2}" font-family="-apple-system,system-ui" font-size="54" font-weight="800" text-anchor="middle">5</text>
+ ${TRAIL.map((t,i)=>`<circle cx="${t[0]}" cy="${t[1]}" r="${t[2]}" fill="none" stroke="#111" stroke-width="2.4" opacity="${.42-i*.09}"/>`).join('')}
+ <circle cx="${P1.x+3}" cy="${P1.y+3}" r="${PR}" fill="${c2}" opacity=".28"/>
+ <circle cx="${P1.x}" cy="${P1.y}" r="${PR}" fill="${c1}"/>
+ <circle cx="${P1.x}" cy="${P1.y}" r="${PR}" fill="url(#dHt2)" opacity=".22"/>
+ <circle cx="${P1.x}" cy="${P1.y}" r="${PR}" fill="none" stroke="#111" stroke-width="4"/>
+ <circle cx="${P1.x}" cy="${P1.y}" r="${PR-15}" fill="none" stroke="#111" stroke-width="3"/>
+ <circle cx="${P2.x-3}" cy="${P2.y+3}" r="${PR}" fill="${c1}" opacity=".28"/>
+ <circle cx="${P2.x}" cy="${P2.y}" r="${PR}" fill="${c2}"/>
+ <circle cx="${P2.x}" cy="${P2.y}" r="${PR}" fill="url(#dHt1)" opacity=".22"/>
+ <circle cx="${P2.x}" cy="${P2.y}" r="${PR}" fill="none" stroke="#111" stroke-width="4"/>
+ <circle cx="${P2.x}" cy="${P2.y}" r="${PR-15}" fill="none" stroke="#111" stroke-width="3"/>
+ <circle cx="${PUCK.x}" cy="${PUCK.y}" r="${KR}" fill="#111"/>
+ <circle cx="${PUCK.x-5}" cy="${PUCK.y-6}" r="5" fill="#f7f2e7"/>
+ <rect x="${ISL.x}" y="${ISL.y}" width="${ISL.w}" height="${ISL.h}" rx="${ISL.r}" fill="#000"/>
+ ${clock("#111",".62")}${homeInd("#f7f2e7",".55")}
+ <rect width="${W}" height="${H}" filter="url(#dGrain)" opacity=".13" style="mix-blend-mode:multiply"/>`;
+}
+
+const THEMES=[
+ {id:"void", name:"A · VOID",   desc:"Тёмный неон-вектор: тонкие светящиеся кольца, белая шайба со шлейфом, сетка-разметка. Прямой наследник Glow Hockey, но строже и чище.", tag:"классика, максимум читаемости", svg:voidTheme},
+ {id:"glass",name:"B · GLASS",  desc:"Матовое стекло на цветной дымке: биты — стеклянные диски с бликом, шайба графитовая с мягкой тенью. Светло, «по-эппловски», нетипично для хоккея.", tag:"премиум, светлая тема", svg:glassTheme},
+ {id:"crt",  name:"C · CRT",    desc:"Аркадный автомат 80-х: люминофор, скан-линии, виньетка, семисегментный счёт, кольца с сильным блумом.", tag:"ретро, самый «игровой»", svg:crtTheme},
+ {id:"ink",  name:"D · INK",    desc:"Ризограф на бумаге: плотная чёрная печать, две краски со смещением, полутоновые точки, зерно. Остров идеально ложится в чёрную заливку.", tag:"смелый, ни на что не похож", svg:inkTheme}
+];
+document.getElementById('row').innerHTML = THEMES.map(t=>
+ `<figure><div class="dev"><svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${t.svg()}</svg></div>
+  <figcaption><b>${t.name}</b><span>${t.desc}</span><span class="tag">${t.tag}</span></figcaption></figure>`).join('');
+</script>

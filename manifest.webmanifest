@@ -1,0 +1,17 @@
+{
+  "name": "Аэрохоккей на двоих",
+  "short_name": "Хоккей",
+  "description": "Аэрохоккей для двоих на одном телефоне. Ворота верхнего игрока — Dynamic Island.",
+  "lang": "ru",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#04050a",
+  "theme_color": "#04050a",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
