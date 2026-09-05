@@ -75,6 +75,7 @@ export function createRenderer(canvas) {
   }
 
   function draw(w, v) {
+    if (!g || !base || !w) return;   // до первой удачной сборки геометрии рисовать нечего
     ctx.save();
     if (v.shake > 0) {
       const m = v.shake * g.W * 0.022;

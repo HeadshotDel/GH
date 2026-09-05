@@ -22,8 +22,10 @@ export function createGame(canvas, probe, hooks) {
 
   /* ---------- геометрия ---------- */
   function buildGeometry() {
+    const next = measure(probe);
+    if (!next) return false;        // экран ещё не разложен — соберём на следующем кадре
     const prev = world;
-    g = measure(probe);
+    g = next;
     theme = getTheme(S.get().theme);
     document.body.className = theme.bodyClass;
     world = P.createWorld(g, S.SPEEDS[S.get().speed].max);
@@ -41,6 +43,7 @@ export function createGame(canvas, probe, hooks) {
     // Рисуем сразу: смена размера очищает канвас, и до следующего кадра
     // экран остался бы пустым (на iOS это заметно, когда прячется панель Safari).
     renderer.draw(world, view());
+    return true;
   }
 
   /* ---------- настройки ---------- */
@@ -49,9 +52,10 @@ export function createGame(canvas, probe, hooks) {
     A.setEnabled(s.sound);
     HAP.setEnabled(s.haptics);
     if (world) world.maxSpeed = S.SPEEDS[s.speed].max;   // скорость применима сразу
-    if (!theme || theme.id !== s.theme) {
-      theme = getTheme(s.theme);
-      document.body.className = theme.bodyClass;
+    const want = getTheme(s.theme);
+    document.body.className = want.bodyClass;
+    if (g && theme !== want) {
+      theme = want;
       renderer.setup(g, theme);
       renderer.draw(world, view());
     }
@@ -63,6 +67,7 @@ export function createGame(canvas, probe, hooks) {
 
   /* ---------- матч ---------- */
   function newMatch() {
+    if (!world && !buildGeometry()) return;   // без геометрии играть не во что
     const s = S.get();
     mode = s.mode; target = s.goals;
     score = [0, 0];
@@ -195,7 +200,7 @@ export function createGame(canvas, probe, hooks) {
       P.stepFrame(world, dt, ev);          // шайба доезжает в створ и гаснет
       if (goalT > 1.35) {
         if (matchOver()) finish();
-        else { P.serve(world, lastGoalBy === 1 ? 1 : 2); cd = 1.8; cdShown = -1; setState('countdown'); }
+        else { P.serve(world, P.nextServeTo(lastGoalBy)); cd = 1.8; cdShown = -1; setState('countdown'); }
       }
     }
   }
@@ -213,6 +218,10 @@ export function createGame(canvas, probe, hooks) {
 
   function frame(now) {
     raf = requestAnimationFrame(frame);
+    // Геометрию могло не получиться собрать при запуске (вкладка была свёрнута,
+    // экран ещё не разложен). Пробуем каждый кадр, пока не выйдет.
+    if (!world && !buildGeometry()) return;
+    if (!world) return;
     const dt = last ? Math.min(0.05, (now - last) / 1000) : 0;
     last = now;
     if (dt > 0) update(dt);

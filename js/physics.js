@@ -41,6 +41,12 @@ export function clampPaddle(w, i) {
     : Math.min(field.bottom - p.r, Math.max(field.cy + p.r, p.ty));
 }
 
+// После гола владение переходит тому, КОМУ забили. Правило вынесено сюда
+// отдельной функцией, чтобы его можно было закрыть тестом: инлайновый
+// тернарник в игровом цикле однажды уже оказался перевёрнутым.
+export function nextServeTo(scorer) { return scorer === 1 ? 2 : 1; }
+
+// toPlayer — игрок, на половину которого ложится шайба (1 — верхний, 2 — нижний).
 export function serve(w, toPlayer) {
   const { field } = w.g;
   const off = field.h * 0.13;

@@ -17,9 +17,12 @@ function readInset(probe, side) {
   return Number.isFinite(v) ? v : 0;
 }
 
+// Возвращает null, если экран ещё не разложен. Канвас нулевого размера —
+// не «пустая картинка», а мина: drawImage из него бросает InvalidStateError.
 export function measure(probe) {
-  const W = window.innerWidth;
-  const H = window.innerHeight;
+  const W = window.innerWidth || document.documentElement.clientWidth || 0;
+  const H = window.innerHeight || document.documentElement.clientHeight || 0;
+  if (W < 1 || H < 1) return null;
   const safe = {
     top: readInset(probe, 'Top'),
     bottom: readInset(probe, 'Bottom'),

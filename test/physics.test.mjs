@@ -2,7 +2,7 @@
 // Ловит регрессии, которые на глаз не видно — туннелирование быстрой шайбы,
 // выход за поле при зажиме между битой и бортом, «немой» гол на вбрасывании.
 // Headless-проверка физики: ворота, штанги, борта, отсутствие туннелирования.
-import { createWorld, stepFrame, stepPaddles, serve, centerPaddles } from '../js/physics.js';
+import { createWorld, stepFrame, stepPaddles, serve, centerPaddles, nextServeTo } from '../js/physics.js';
 
 const W = 393, H = 852, islandW = 125;
 const field = { top: 59, bottom: 793, left: 0, right: W,
@@ -145,6 +145,21 @@ function run(w, seconds, fps = 60) {
   ok('во время отсчёта шайба не двигается', Math.abs(w.puck.y - y0) < 1e-9);
   ok('во время отсчёта гол невозможен', w.scoring === 0);
   ok('во время отсчёта бита зажата в своей половине', w.paddles[1].y >= field.cy - 0.01);
+}
+
+// 9. Владение после гола: шайба достаётся пропустившему, а не забившему.
+{
+  ok('забил нижний — вбрасывание верхнему', nextServeTo(2) === 1);
+  ok('забил верхний — вбрасывание нижнему', nextServeTo(1) === 2);
+
+  const w = createWorld(g, 2200); centerPaddles(w);
+  serve(w, nextServeTo(2));            // гол забил нижний игрок
+  ok('после гола нижнего шайба в верхней половине', w.puck.y < field.cy,
+     `y=${w.puck.y.toFixed(0)} при центре ${field.cy}`);
+
+  serve(w, nextServeTo(1));            // гол забил верхний игрок
+  ok('после гола верхнего шайба в нижней половине', w.puck.y > field.cy,
+     `y=${w.puck.y.toFixed(0)} при центре ${field.cy}`);
 }
 
 console.log(`\n${pass} ok, ${fail} fail`);
