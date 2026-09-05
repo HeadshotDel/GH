@@ -6,6 +6,7 @@ import { createRenderer } from './render.js';
 import * as P from './physics.js';
 import * as A from './audio.js';
 import { attachInput } from './input.js';
+import { createBot } from './bot.js';
 
 export function createGame(canvas, probe, hooks) {
   const renderer = createRenderer(canvas);
@@ -15,6 +16,7 @@ export function createGame(canvas, probe, hooks) {
   let target = 7, mode = 'goals', timeLeft = 0, suddenDeath = false;
   let cd = 0, cdShown = -1, goalT = 0, lastGoalBy = 0;
   let raf = 0, last = 0, clock = 0;
+  let bot = null;                  // не null — верхней битой играет бот
   let wakeLock = null;
 
   const fx = { trail: [], rings: [], shake: 0, goalFlash: 0, goalColor: '#fff', pop: [0, 0] };
@@ -67,6 +69,8 @@ export function createGame(canvas, probe, hooks) {
   function newMatch() {
     if (!world && !buildGeometry()) return;   // без геометрии играть не во что
     const s = S.get();
+    bot = s.opponent === 'bot' ? createBot(s.botLevel) : null;
+    document.body.dataset.opponent = s.opponent;
     mode = s.mode; target = s.goals;
     score = [0, 0];
     suddenDeath = false;
@@ -163,11 +167,13 @@ export function createGame(canvas, probe, hooks) {
       const n = Math.ceil(cd);
       if (n !== cdShown && n >= 1 && n <= 3) { cdShown = n; A.sfxTick(false); }
       if (cd <= 0) { A.sfxTick(true); setState('play'); }
+      if (bot) bot.update(world, dt, clock);
       P.stepPaddles(world);                // биты уже слушаются пальцев, шайба ждёт
       return;
     }
 
     if (state === 'play') {
+      if (bot) bot.update(world, dt, clock);
       const ev = [];
       P.stepFrame(world, dt, ev);
       handleEvents(ev);
@@ -189,11 +195,12 @@ export function createGame(canvas, probe, hooks) {
 
     if (state === 'goal') {
       goalT += dt;
+      if (bot) bot.update(world, dt, clock);
       const ev = [];
       P.stepFrame(world, dt, ev);          // шайба доезжает в створ и гаснет
       if (goalT > 1.35) {
         if (matchOver()) finish();
-        else { P.serve(world, P.nextServeTo(lastGoalBy)); cd = 1.8; cdShown = -1; setState('countdown'); }
+        else { P.serve(world, P.nextServeTo(lastGoalBy)); bot?.reset(); cd = 1.8; cdShown = -1; setState('countdown'); }
       }
     }
   }
@@ -202,7 +209,7 @@ export function createGame(canvas, probe, hooks) {
     return {
       score1: score[0], score2: score[1],
       pop1: fx.pop[0], pop2: fx.pop[1],
-      mode, timeLeft, clock,
+      mode, timeLeft, clock, bot: !!bot,
       trail: fx.trail, rings: fx.rings,
       shake: fx.shake, goalFlash: fx.goalFlash, goalColor: fx.goalColor,
       countdown: state === 'countdown' ? Math.ceil(cd) : 0,
@@ -233,7 +240,9 @@ export function createGame(canvas, probe, hooks) {
     applySettings();
     // 'goal' тоже считается игровым: иначе палец, опущенный во время паузы
     // после гола, не «подхватится» — событие pointerdown уже не повторится.
-    attachInput(canvas, () => world, () => A.unlock(), () => state === 'play' || state === 'countdown' || state === 'goal');
+    attachInput(canvas, () => world, () => A.unlock(),
+      () => state === 'play' || state === 'countdown' || state === 'goal',
+      (i) => !(bot && i === 0));      // верхнюю биту у бота не отнять
 
     let rt = 0;
     const onResize = () => { clearTimeout(rt); rt = setTimeout(() => { buildGeometry(); applySettings(); hooks.onResize?.(isLandscape()); }, 140); };
@@ -252,5 +261,6 @@ export function createGame(canvas, probe, hooks) {
     get state() { return state; },
     get score() { return score; },
     get suddenDeath() { return suddenDeath; },
+    get vsBot() { return !!bot; },
   };
 }

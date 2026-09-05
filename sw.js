@@ -1,6 +1,6 @@
 // Офлайн-кэш. Версию поднимать при каждом изменении файлов —
 // иначе на телефоне останется старая сборка.
-const CACHE = 'ah-v4';
+const CACHE = 'ah-v5';
 const ASSETS = [
   './',
   'index.html',
@@ -11,6 +11,7 @@ const ASSETS = [
   'js/ui.js',
   'js/render.js',
   'js/physics.js',
+  'js/bot.js',
   'js/input.js',
   'js/themes.js',
   'js/audio.js',

@@ -23,9 +23,12 @@ export function createUI(game) {
   function hideAll() { Object.values(scr).forEach((s) => show(s, false)); }
   function showPauseBtns(on) { pauseBtns.forEach((b) => show(b, on)); }
 
+  const LEVEL_NAMES = { easy: 'лёгкий', normal: 'средний', hard: 'сложный' };
+
   function modeLabel() {
     const s = S.get();
-    return s.mode === 'goals' ? `до ${s.goals} голов` : `${s.minutes} мин`;
+    const rules = s.mode === 'goals' ? `до ${s.goals} голов` : `${s.minutes} мин`;
+    return s.opponent === 'bot' ? `бот · ${LEVEL_NAMES[s.botLevel]} · ${rules}` : rules;
   }
   function refreshModeLabels() {
     document.querySelectorAll('[data-mode-label]').forEach((e) => { e.textContent = modeLabel(); });
@@ -56,11 +59,14 @@ export function createUI(game) {
 
   function paint() {
     paintSeg('set-theme', 'theme');
+    paintSeg('set-opponent', 'opponent');
+    paintSeg('set-bot-level', 'botLevel');
     paintSeg('set-mode', 'mode');
     paintSeg('set-goals', 'goals');
     paintSeg('set-minutes', 'minutes');
     paintSeg('set-speed', 'speed');
     const s = S.get();
+    $('set-bot-level').hidden = s.opponent !== 'bot';
     $('set-goals').hidden = s.mode !== 'goals';
     $('set-minutes').hidden = s.mode !== 'time';
     for (const [k, id] of Object.entries(swIds)) $(id).checked = s[k];
@@ -70,6 +76,8 @@ export function createUI(game) {
 
   function wireSettings() {
     seg('set-theme', 'theme', String, () => game.retheme());
+    seg('set-opponent', 'opponent');
+    seg('set-bot-level', 'botLevel');
     seg('set-mode', 'mode');
     seg('set-goals', 'goals', Number);
     seg('set-minutes', 'minutes', Number);
@@ -96,9 +104,12 @@ export function createUI(game) {
   function toSettings(from) { settingsFrom = from; hideAll(); showPauseBtns(false); paint(); show(scr.settings, true); }
 
   scr.start.addEventListener('click', (e) => {
-    if (e.target.closest('#open-settings')) return;
+    const b = e.target.closest('[data-start]');
+    if (!b) return;                       // мимо кнопок — ничего не запускаем
     A.unlock();          // iOS отдаёт звук только из обработчика жеста
     HAP.tap();
+    S.set({ opponent: b.dataset.start });
+    refreshModeLabels();
     hideAll(); showPauseBtns(true); game.newMatch();
   });
   $('open-settings').addEventListener('click', (e) => { e.stopPropagation(); click(); toSettings('start'); });
@@ -119,10 +130,13 @@ export function createUI(game) {
 
   /* ---------- реакции на игру ---------- */
   function onGoal(player) {
-    const el = player === 1 ? $('goal-word-top') : $('goal-word-bottom');
-    const other = player === 1 ? $('goal-word-bottom') : $('goal-word-top');
+    // С ботом наверху никого нет: пишем всё на половине человека, но говорим,
+    // чей это гол — иначе вспышка непонятно кого поздравляет.
+    const vsBot = game.vsBot;
+    const el = (!vsBot && player === 1) ? $('goal-word-top') : $('goal-word-bottom');
+    const other = el === $('goal-word-top') ? $('goal-word-bottom') : $('goal-word-top');
     other.textContent = '';
-    el.textContent = game.suddenDeath ? 'ЗОЛОТОЙ ГОЛ' : 'ГОЛ';
+    el.textContent = game.suddenDeath ? 'ЗОЛОТОЙ ГОЛ' : (vsBot && player === 1 ? 'ГОЛ БОТА' : 'ГОЛ');
     show(scr.goal, true);
     requestAnimationFrame(() => el.classList.add('show'));
     clearTimeout(goalTimer);

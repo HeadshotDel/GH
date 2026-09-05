@@ -73,6 +73,11 @@ body.theme-void .title{text-shadow:0 0 22px rgba(0,224,255,.35)}
 .row-btns{display:flex;gap:10px;margin-bottom:10px}
 .row-btns .btn{flex:1}
 .rematch{margin-top:6px;min-width:170px}
+.start-btns{display:flex;gap:10px;justify-content:center;margin-top:22px}
+.start-btns .btn{min-width:132px}
+/* В игре с ботом наверху никто не сидит — зеркальную половину итогов прячем. */
+body[data-opponent="bot"] #screen-end .half.top{display:none}
+body[data-opponent="bot"] #screen-end .half.bottom{height:100%}
 
 .pause-btn{position:fixed;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);
   background:var(--btn);display:none;align-items:center;justify-content:center;padding:0;cursor:pointer;z-index:3}

@@ -4,6 +4,8 @@ const KEY = 'ah.settings.v1';
 
 export const DEFAULTS = {
   theme: 'void',
+  opponent: 'human',  // human | bot
+  botLevel: 'normal', // easy | normal | hard
   mode: 'goals',      // goals | time
   goals: 7,           // стандарт настоящего аэрохоккея
   minutes: 3,

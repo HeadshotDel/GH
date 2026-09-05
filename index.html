@@ -33,14 +33,17 @@
       <div class="block">
         <h1 class="title">АЭРОХОККЕЙ</h1>
         <p class="sub" data-mode-label>до 7 голов</p>
-        <p class="hint">коснитесь, чтобы начать</p>
+        <div class="start-btns"><button class="btn primary" data-start="human">На двоих</button></div>
       </div>
     </div>
     <div class="half bottom">
       <div class="block">
         <h1 class="title">АЭРОХОККЕЙ</h1>
         <p class="sub" data-mode-label>до 7 голов</p>
-        <p class="hint">коснитесь, чтобы начать</p>
+        <div class="start-btns">
+          <button class="btn primary" data-start="human">На двоих</button>
+          <button class="btn" data-start="bot">С ботом</button>
+        </div>
       </div>
     </div>
     <button class="gear" id="open-settings" aria-label="Настройки"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2zm0 5.7a2.1 2.1 0 1 1 0-4.2 2.1 2.1 0 0 1 0 4.2z"/><path d="M20.6 13.6l-1.4-.8a7.5 7.5 0 0 0 0-1.6l1.4-.8a.9.9 0 0 0 .35-1.2l-1.5-2.6a.9.9 0 0 0-1.2-.35l-1.4.8a7.4 7.4 0 0 0-1.4-.8V4.6a.9.9 0 0 0-.9-.9h-3a.9.9 0 0 0-.9.9v1.65c-.5.2-.97.47-1.4.8l-1.4-.8a.9.9 0 0 0-1.2.35l-1.5 2.6a.9.9 0 0 0 .35 1.2l1.4.8a7.5 7.5 0 0 0 0 1.6l-1.4.8a.9.9 0 0 0-.35 1.2l1.5 2.6a.9.9 0 0 0 1.2.35l1.4-.8c.43.33.9.6 1.4.8v1.65a.9.9 0 0 0 .9.9h3a.9.9 0 0 0 .9-.9V17.8c.5-.2.97-.47 1.4-.8l1.4.8a.9.9 0 0 0 1.2-.35l1.5-2.6a.9.9 0 0 0-.35-1.2z" opacity=".55"/></svg></button>
@@ -68,6 +71,19 @@
         <div class="seg" id="set-theme" role="radiogroup">
           <button class="seg-i" data-v="void">Void</button>
           <button class="seg-i" data-v="ink">Ink</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-title">Соперник</div>
+        <div class="seg" id="set-opponent" role="radiogroup">
+          <button class="seg-i" data-v="human">Человек</button>
+          <button class="seg-i" data-v="bot">Бот</button>
+        </div>
+        <div class="seg sub-seg" id="set-bot-level" role="radiogroup">
+          <button class="seg-i" data-v="easy">Лёгкий</button>
+          <button class="seg-i" data-v="normal">Средний</button>
+          <button class="seg-i" data-v="hard">Сложный</button>
         </div>
       </div>
 

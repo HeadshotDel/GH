@@ -2,7 +2,7 @@
 // коснулся первым; дальше палец может уходить куда угодно — бита останется
 // зажатой в своей половине.
 
-export function attachInput(canvas, getWorld, onFirstTouch, isPlayable) {
+export function attachInput(canvas, getWorld, onFirstTouch, isPlayable, canControl = () => true) {
   const owner = [null, null]; // pointerId для верхнего и нижнего игрока
   let unlocked = false;
 
@@ -21,6 +21,7 @@ export function attachInput(canvas, getWorld, onFirstTouch, isPlayable) {
     if (!unlocked) { unlocked = true; onFirstTouch(); }
     if (!isPlayable()) return;
     const i = playerFor(e.clientY);
+    if (!canControl(i)) return;             // этой битой играет бот
     if (owner[i] !== null) return;          // у игрока уже есть активный палец
     owner[i] = e.pointerId;
     setTarget(i, e.clientX, e.clientY, true);

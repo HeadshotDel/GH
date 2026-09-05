@@ -50,10 +50,22 @@ export function createRenderer(canvas) {
     const x1 = g.W * 0.118, y1 = g.field.top + g.field.h * 0.10;
     const x2 = g.W * 0.882, y2 = g.field.bottom - g.field.h * 0.10;
 
+    // В игре с ботом наверху никто не сидит: его счёт не переворачиваем,
+    // читать его будет человек снизу, и подписываем, чей он.
     ctx.save();
-    ctx.translate(x1, y1); ctx.rotate(Math.PI); ctx.scale(pop(v.pop1), pop(v.pop1));
+    ctx.translate(x1, y1);
+    if (!v.bot) ctx.rotate(Math.PI);
+    ctx.scale(pop(v.pop1), pop(v.pop1));
     ctx.fillStyle = theme.p1; ctx.fillText(String(v.score1), 0, 0);
     ctx.restore();
+    if (v.bot) {
+      ctx.font = `600 ${Math.round(g.W * 0.031)}px -apple-system, system-ui, sans-serif`;
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = theme.p1;
+      ctx.fillText('БОТ', x1, y1 + size * 0.68);
+      ctx.globalAlpha = theme.score.alpha;
+      ctx.font = theme.score.font(size);
+    }
 
     ctx.save();
     ctx.translate(x2, y2); ctx.scale(pop(v.pop2), pop(v.pop2));
