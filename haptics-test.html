@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#04050a">
+<title>Щуп вибрации</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;padding:calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 28px);
+    background:#04050a;color:#e9f4ff;font:15px/1.45 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+    -webkit-user-select:none;user-select:none}
+  h1{font-size:19px;margin:0 0 4px;font-weight:600}
+  .lead{color:rgba(233,244,255,.55);font-size:13px;margin:0 0 16px}
+  .env{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:12px;
+    padding:10px 12px;font-size:12.5px;color:rgba(233,244,255,.7);margin-bottom:18px}
+  .env b{color:#00e0ff;font-weight:600}
+  .t{border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:13px 14px;margin-bottom:11px;
+    background:rgba(255,255,255,.03)}
+  .t h2{font-size:15px;margin:0 0 3px;font-weight:600}
+  .t p{margin:0 0 11px;font-size:12.5px;color:rgba(233,244,255,.5)}
+  .go{-webkit-appearance:none;appearance:none;border:0;background:rgba(255,255,255,.14);color:#e9f4ff;
+    font:inherit;font-weight:600;font-size:15px;padding:14px;border-radius:12px;width:100%;min-height:52px}
+  .go:active{background:rgba(255,255,255,.26)}
+  .pad{height:120px;border-radius:12px;background:rgba(0,224,255,.10);border:1px dashed rgba(0,224,255,.45);
+    display:flex;align-items:center;justify-content:center;text-align:center;font-size:13px;
+    color:rgba(233,244,255,.75);touch-action:none;padding:0 14px}
+  .ans{display:flex;gap:8px;margin-top:10px}
+  .ans button{flex:1;-webkit-appearance:none;appearance:none;border:1px solid rgba(255,255,255,.16);
+    background:transparent;color:rgba(233,244,255,.6);font:inherit;font-size:14px;font-weight:600;
+    padding:11px;border-radius:10px;min-height:46px}
+  .ans button[data-on="yes"]{background:rgba(0,224,255,.22);border-color:transparent;color:#e9f4ff}
+  .ans button[data-on="no"]{background:rgba(255,45,138,.22);border-color:transparent;color:#e9f4ff}
+  .fired{font-size:12px;color:#00e0ff;margin-top:8px;min-height:16px}
+  .sum{position:sticky;bottom:0;margin-top:20px;background:#0a0f1c;border:1px solid rgba(0,224,255,.35);
+    border-radius:14px;padding:14px}
+  .sum h2{font-size:13px;margin:0 0 8px;color:rgba(233,244,255,.6);font-weight:600;
+    text-transform:uppercase;letter-spacing:.08em}
+  .sum pre{margin:0;font:13px/1.6 ui-monospace,Menlo,monospace;color:#e9f4ff;white-space:pre-wrap;word-break:break-word}
+</style>
+</head>
+<body>
+
+<h1>Щуп вибрации</h1>
+<p class="lead">Каждый пункт вызывает системный тик из своего контекста.
+Нажмите кнопку и отметьте, почувствовали ли отклик. Внизу соберётся строка —
+продиктуйте её мне.</p>
+
+<div class="env" id="env"></div>
+<div id="tests"></div>
+
+<div class="sum">
+  <h2>Результат</h2>
+  <pre id="sum">— ещё ничего не отмечено —</pre>
+</div>
+
+<label id="hl" for="hi" aria-hidden="true"><input id="hi" type="checkbox" switch tabindex="-1"></label>
+
+<script>
+const label = document.getElementById('hl');
+Object.assign(label.style, {position:'fixed',top:'0',left:'0',width:'1px',height:'1px',
+  opacity:'0.002',pointerEvents:'none',zIndex:'-1',overflow:'hidden'});
+
+const supported = 'switch' in document.createElement('input');
+let sent = 0;
+function tick() { sent++; try { label.click(); } catch (e) {} }
+
+document.getElementById('env').innerHTML =
+  'переключатель <b>' + (supported ? 'поддерживается' : 'НЕ поддерживается') + '</b> · ' +
+  'режим <b>' + (navigator.standalone ? 'с домашнего экрана' : 'вкладка Safari') + '</b> · ' +
+  'экран <b>' + innerWidth + '×' + innerHeight + '</b>';
+
+// Контексты по возрастанию «удалённости» от жеста пользователя.
+const TESTS = [
+  { id:1, name:'Прямо в обработчике нажатия', note:'Эталон. Так работает кнопка в настройках.',
+    kind:'button', run:(el, done) => { tick(); done(1); } },
+  { id:2, name:'В момент касания (pointerdown)', note:'Тик в тот же миг, когда палец коснулся экрана.',
+    kind:'down', run:(el, done) => { tick(); done(1); } },
+  { id:3, name:'При отрыве пальца (touchend)', note:'Ещё один контекст, дающий активацию.',
+    kind:'touchend', run:(el, done) => { tick(); done(1); } },
+  { id:4, name:'Через 300 мс после нажатия', note:'Таймер вскоре после жеста — активация ещё жива.',
+    kind:'button', run:(el, done) => { setTimeout(() => { tick(); done(1); }, 300); } },
+  { id:5, name:'Через 3 секунды после нажатия', note:'Нажмите и подождите — к этому моменту право на отклик от жеста уже истекло.',
+    kind:'button', run:(el, done) => { setTimeout(() => { tick(); done(1); }, 3000); } },
+  { id:6, name:'Из игрового цикла (requestAnimationFrame)', note:'Так игра делала до правки. Три тика на 10-м, 20-м и 30-м кадре.',
+    kind:'button', run:(el, done) => {
+      let n = 0, k = 0;
+      const f = () => { n++; if (n % 10 === 0) { tick(); k++; } if (k < 3) requestAnimationFrame(f); else done(3); };
+      requestAnimationFrame(f);
+    } },
+  { id:7, name:'Во время движения пальца (pointermove)', note:'ГЛАВНЫЙ ПУНКТ: так игра делает сейчас. Водите пальцем по этой области несколько секунд.',
+    kind:'drag', run:null },
+];
+
+const answers = {};
+const box = document.getElementById('tests');
+
+function render() {
+  const line = TESTS.map(t => t.id + ':' + (answers[t.id] || '?')).join('  ');
+  const felt = TESTS.filter(t => answers[t.id] === 'да').map(t => t.id);
+  document.getElementById('sum').textContent =
+    (supported ? 'switch есть' : 'switch НЕТ') +
+    ' · ' + (navigator.standalone ? 'с домашнего экрана' : 'Safari') +
+    '\n' + line +
+    '\nчувствую: ' + (felt.length ? felt.join(', ') : 'нигде');
+}
+
+for (const t of TESTS) {
+  const el = document.createElement('div');
+  el.className = 't';
+  el.innerHTML = '<h2>' + t.id + '. ' + t.name + '</h2><p>' + t.note + '</p>' +
+    (t.kind === 'drag'
+      ? '<div class="pad">водите пальцем здесь</div>'
+      : '<button class="go">' + (t.kind === 'button' ? 'Проверить' : t.kind === 'down' ? 'Коснуться' : 'Коснуться и отпустить') + '</button>') +
+    '<div class="fired"></div>' +
+    '<div class="ans"><button data-v="да">Чувствую</button><button data-v="нет">Ничего</button></div>';
+  box.appendChild(el);
+
+  const fired = el.querySelector('.fired');
+  const done = (n) => { fired.textContent = 'отправлено тиков: ' + n; };
+
+  if (t.kind === 'drag') {
+    const pad = el.querySelector('.pad');
+    let n = 0, lastT = 0;
+    pad.addEventListener('pointermove', (e) => {
+      const now = performance.now();
+      if (now - lastT < 350) return;       // как в игре: не чаще, иначе iOS душит
+      lastT = now; tick(); n++;
+      fired.textContent = 'отправлено тиков: ' + n;
+    });
+    pad.addEventListener('pointerdown', (e) => { pad.setPointerCapture(e.pointerId); });
+  } else if (t.kind === 'down') {
+    el.querySelector('.go').addEventListener('pointerdown', () => t.run(el, done));
+  } else if (t.kind === 'touchend') {
+    el.querySelector('.go').addEventListener('touchend', () => t.run(el, done));
+  } else {
+    el.querySelector('.go').addEventListener('click', () => t.run(el, done));
+  }
+
+  el.querySelectorAll('.ans button').forEach((b) => {
+    b.addEventListener('click', () => {
+      answers[t.id] = b.dataset.v;
+      el.querySelectorAll('.ans button').forEach((x) =>
+        x.dataset.on = x.dataset.v === 'да' ? (answers[t.id] === 'да' ? 'yes' : '') : (answers[t.id] === 'нет' ? 'no' : ''));
+      render();
+    });
+  });
+}
+render();
+document.addEventListener('gesturestart', (e) => e.preventDefault());
+</script>
+</body>
+</html>
