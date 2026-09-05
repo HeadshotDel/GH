@@ -78,9 +78,11 @@ export function createRenderer(canvas) {
       ctx.font = `600 ${Math.round(g.W * 0.042)}px -apple-system, system-ui, sans-serif`;
       ctx.globalAlpha = v.timeLeft <= 10 ? 0.55 + 0.45 * Math.abs(Math.sin(v.clock * 4)) : 0.42;
       ctx.fillStyle = theme.id === 'ink' ? '#111' : '#ffffff';
-      ctx.save();
-      ctx.translate(g.field.cx, g.field.cy - g.W * 0.045); ctx.rotate(Math.PI);
-      ctx.fillText(label, 0, 0); ctx.restore();
+      if (!v.bot) {
+        ctx.save();
+        ctx.translate(g.field.cx, g.field.cy - g.W * 0.045); ctx.rotate(Math.PI);
+        ctx.fillText(label, 0, 0); ctx.restore();
+      }
       ctx.fillText(label, g.field.cx, g.field.cy + g.W * 0.045);
     }
     ctx.globalAlpha = 1;
@@ -123,11 +125,13 @@ export function createRenderer(canvas) {
       ctx.fillStyle = theme.id === 'ink' ? '#111' : '#ffffff';
       ctx.globalAlpha = 0.8;
       const off = g.W * 0.125;
-      ctx.save();
-      ctx.translate(g.field.cx, g.field.cy - off); ctx.rotate(Math.PI);
-      ctx.fillText(String(v.countdown), 0, 0);
-      ctx.restore();
-      ctx.fillText(String(v.countdown), g.field.cx, g.field.cy + off);
+      if (!v.bot) {
+        ctx.save();
+        ctx.translate(g.field.cx, g.field.cy - off); ctx.rotate(Math.PI);
+        ctx.fillText(String(v.countdown), 0, 0);
+        ctx.restore();
+      }
+      ctx.fillText(String(v.countdown), g.field.cx, g.field.cy + (v.bot ? 0 : off));
       ctx.globalAlpha = 1;
     }
 

@@ -200,6 +200,12 @@ export function createBot(level, rng = Math.random, side = 0) {
 
     ty = s > 0 ? Math.min(ty, maxY) : Math.max(ty, maxY);
 
+    moveTo(pad, tx, ty, dt);
+  }
+
+  // Рука бота не мгновенная: цель смещается с ограниченной скоростью, и
+  // именно её физика превращает в силу удара.
+  function moveTo(pad, tx, ty, dt) {
     const ddx = tx - pad.x, ddy = ty - pad.y;
     const dd = Math.hypot(ddx, ddy);
     const step = cfg.speed * dt;
@@ -207,5 +213,19 @@ export function createBot(level, rng = Math.random, side = 0) {
     pad.tx = tx; pad.ty = ty;
   }
 
-  return { update, reset };
+  // Вбрасывание и пауза после гола: бот возвращается к своим воротам и не
+  // трогает шайбу. Бросаться на неё до свистка бессмысленно и опасно —
+  // столкновения в эти секунды не считаются, и к началу розыгрыша бита
+  // оказалась бы вплотную к шайбе с непредсказуемой стороны.
+  function home(w, dt) {
+    const pad = w.paddles[side];
+    const { field, paddleR } = w.g;
+    const sgn = side === 0 ? 1 : -1;
+    const ownY = side === 0 ? field.top : field.bottom;
+    const half = field.cy - field.top;
+    striking = false;
+    moveTo(pad, field.cx, ownY + sgn * (paddleR + half * 0.10), dt);
+  }
+
+  return { update, home, reset };
 }

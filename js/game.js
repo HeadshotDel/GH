@@ -167,7 +167,7 @@ export function createGame(canvas, probe, hooks) {
       const n = Math.ceil(cd);
       if (n !== cdShown && n >= 1 && n <= 3) { cdShown = n; A.sfxTick(false); }
       if (cd <= 0) { A.sfxTick(true); setState('play'); }
-      if (bot) bot.update(world, dt, clock);
+      if (bot) bot.home(world, dt);        // до свистка шайбу не трогаем
       P.stepPaddles(world);                // биты уже слушаются пальцев, шайба ждёт
       return;
     }
@@ -195,7 +195,7 @@ export function createGame(canvas, probe, hooks) {
 
     if (state === 'goal') {
       goalT += dt;
-      if (bot) bot.update(world, dt, clock);
+      if (bot) bot.home(world, dt);        // розыгрыш мёртв, возвращаемся к воротам
       const ev = [];
       P.stepFrame(world, dt, ev);          // шайба доезжает в створ и гаснет
       if (goalT > 1.35) {

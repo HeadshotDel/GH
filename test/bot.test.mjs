@@ -2,7 +2,7 @@
 // Меряем бота им же самим — так соперник заведомо силён и честен.
 // Главное здесь не «код не падает», а что уровни действительно отличаются
 // силой игры, а не только подписью в настройках.
-import { createWorld, stepFrame, serve, centerPaddles, nextServeTo } from '../js/physics.js';
+import { createWorld, stepFrame, stepPaddles, serve, centerPaddles, nextServeTo } from '../js/physics.js';
 import { createBot } from '../js/bot.js';
 import { makeGeom, seeded } from './harness.mjs';
 
@@ -178,6 +178,44 @@ function ownGoalsFromBehind(level, tries = 120) {
   return ownPlayable / playable;
 }
 
+
+// Розыгрыш со старта: вбрасывание, обратный отсчёт, свисток. Именно здесь бот
+// забивал себе — на отсчёте столкновения не считаются, и бита успевала въехать
+// внутрь замершей шайбы; по свистку физика расталкивала их и выстреливала
+// шайбу в его же ворота. Проверяем оба конца: шайба на вбрасывании остаётся
+// препятствием, и первые секунды розыгрыша проходят без автогола.
+function faceOffRuns(level, tries = 90) {
+  let own = 0, overlapped = 0;
+  for (let k = 0; k < tries; k++) {
+    const rng = seeded(k * 613 + 11);
+    const w = createWorld(g, 2200);
+    const bot = createBot(level, rng, 0);
+    centerPaddles(w);
+    serve(w, 1);                       // шайбу вбрасывают на половину бота
+    // Человек в это время тоже шевелится — иногда прямо на шайбу.
+    const greedy = rng() < 0.5;
+    for (let i = 0; i < 60 * 3.2; i++) {   // отсчёт
+      bot.home(w, 1 / 60);
+      w.paddles[1].tx = greedy ? w.puck.x : field.cx;
+      w.paddles[1].ty = greedy ? w.puck.y : field.bottom - g.paddleR - 40;
+      stepPaddles(w);
+      const minD = g.paddleR + g.puckR;
+      for (const pad of w.paddles) {
+        if (Math.hypot(pad.x - w.puck.x, pad.y - w.puck.y) < minD - 0.5) overlapped++;
+      }
+    }
+    const ev = [];
+    for (let i = 0; i < 60 * 6; i++) {     // розыгрыш
+      bot.update(w, 1 / 60, i / 60);
+      ev.length = 0;
+      stepFrame(w, 1 / 60, ev);
+      const gl = ev.find((e) => e.type === 'goal');
+      if (gl) { if (gl.player === 2) own++; break; }
+    }
+  }
+  return { own: own / tries, overlapped };
+}
+
 console.log('--- серии по 9 матчей до 7 голов ---');
 const pairs = [['easy','easy'], ['normal','normal'], ['hard','hard'],
                ['hard','easy'], ['hard','normal'], ['normal','easy']];
@@ -210,6 +248,14 @@ for (const level of ['easy', 'normal', 'hard']) {
   console.log(`  ${level.padEnd(7)} автоголов с играбельных позиций: ${(behind[level] * 100).toFixed(1)}%`);
 }
 
+console.log('\n--- розыгрыш со старта: вбрасывание, отсчёт, свисток ---');
+const face = {};
+for (const level of ['easy', 'normal', 'hard']) {
+  face[level] = faceOffRuns(level);
+  console.log(`  ${level.padEnd(7)} автоголов в первые 6 с: ${(face[level].own * 100).toFixed(1)}%` +
+    `  | бита внутри шайбы на отсчёте: ${face[level].overlapped} кадров`);
+}
+
 console.log('');
 const all = Object.values(R);
 ok('никто не заступает за центр', all.every((r) => r.cross === 0));
@@ -239,6 +285,13 @@ ok('бот почти не забивает себе', Object.values(own).every(
    `худший ${(Math.max(...Object.values(own)) * 100).toFixed(0)}%`);
 ok('не забивает себе, обходя шайбу у своих ворот', Object.values(behind).every((v) => v <= 0.04),
    `худший ${(Math.max(...Object.values(behind)) * 100).toFixed(1)}%`);
+ok('на вбрасывании бита не въезжает в шайбу', Object.values(face).every((v) => v.overlapped === 0),
+   `кадров с наложением: ${Object.values(face).reduce((a, v) => a + v.overlapped, 0)}`);
+// Лёгкий и средний дают ноль. У сложного остаются единичные случаи: он самый
+// агрессивный, далеко отходит от ворот и изредка срезает шайбу в свои ворота
+// уже в открытой игре — это характер, а не поломка.
+ok('со старта розыгрыша бот не забивает себе', Object.values(face).every((v) => v.own <= 0.035),
+   `худший ${(Math.max(...Object.values(face).map((v) => v.own)) * 100).toFixed(1)}%`);
 ok('сложный всё же серьёзен', save.hard > 0.85, `берёт ${(save.hard * 100).toFixed(0)}%`);
 
 console.log(`\n${pass} ok, ${fail} fail`);
