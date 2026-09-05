@@ -4,6 +4,10 @@ import * as S from './settings.js';
 import * as HAP from './haptics.js';
 import * as A from './audio.js';
 
+// Единственный контекст, в котором iOS отдаёт тактильный отклик, — жест
+// пользователя. Подробности и замер: js/haptics.js.
+const click = () => { A.sfxUi(); HAP.tap(); };
+
 const $ = (id) => document.getElementById(id);
 const show = (el, on) => { if (el) on ? el.setAttribute('data-open', '') : el.removeAttribute('data-open'); };
 
@@ -34,7 +38,7 @@ export function createUI(game) {
       b.addEventListener('click', () => {
         S.set({ [key]: cast(b.dataset.v) });
         paint();
-        A.sfxUi();
+        click();
         after?.();
       });
     });
@@ -45,12 +49,8 @@ export function createUI(game) {
       b.setAttribute('aria-checked', String(b.dataset.v === v)));
   }
 
-  // Мастер-тумблер считает только те эффекты, которые на этом устройстве
-  // вообще возможны: иначе без вибрации «все эффекты» не включались бы никогда.
-  const fxKeys = () => S.FX_KEYS.filter((k) => k !== 'haptics' || HAP.isSupported());
-
   const swIds = {
-    sound: 'set-sound', haptics: 'set-haptics', trail: 'set-trail',
+    sound: 'set-sound', trail: 'set-trail',
     flash: 'set-flash', shake: 'set-shake',
   };
 
@@ -64,8 +64,7 @@ export function createUI(game) {
     $('set-goals').hidden = s.mode !== 'goals';
     $('set-minutes').hidden = s.mode !== 'time';
     for (const [k, id] of Object.entries(swIds)) $(id).checked = s[k];
-    $('test-haptic').disabled = !HAP.isSupported() || !s.haptics;
-    $('set-fx-master').checked = fxKeys().every((k) => s[k]);
+    $('set-fx-master').checked = S.FX_KEYS.every((k) => s[k]);
     refreshModeLabels();
   }
 
@@ -81,33 +80,15 @@ export function createUI(game) {
         S.set({ [k]: e.target.checked });
         game.applySettings();
         paint();
-        if (k === 'haptics' && e.target.checked) HAP.tapNow();
       });
     }
     $('set-fx-master').addEventListener('change', (e) => {
       const on = e.target.checked;
-      S.set(Object.fromEntries(fxKeys().map((k) => [k, on])));
+      S.set(Object.fromEntries(S.FX_KEYS.map((k) => [k, on])));
       game.applySettings();
       paint();
     });
 
-    const note = $('haptic-note');
-    if (!HAP.isSupported()) {
-      note.textContent = 'на этом устройстве недоступна';
-      $('set-haptics').disabled = true;
-      $('test-haptic').disabled = true;
-      S.set({ haptics: false });          // иначе тумблер горит, а отклика нет
-    } else {
-      note.textContent = 'короткий системный тик — сильнее iOS не даёт';
-    }
-    // Раньше кнопка принудительно включала вибрацию и била по API напрямую —
-    // и потому «работала» даже когда игра молчала. Теперь она гаснет вместе
-    // с тумблером и использует тот же fire(), что и удары по шайбе.
-    $('test-haptic').addEventListener('click', () => {
-      HAP.tapNow();
-      setTimeout(() => HAP.tapNow(), 90);
-      setTimeout(() => HAP.tapNow(), 180);
-    });
   }
 
   /* ---------- навигация ---------- */
@@ -117,22 +98,23 @@ export function createUI(game) {
   scr.start.addEventListener('click', (e) => {
     if (e.target.closest('#open-settings')) return;
     A.unlock();          // iOS отдаёт звук только из обработчика жеста
+    HAP.tap();
     hideAll(); showPauseBtns(true); game.newMatch();
   });
-  $('open-settings').addEventListener('click', (e) => { e.stopPropagation(); A.sfxUi(); toSettings('start'); });
+  $('open-settings').addEventListener('click', (e) => { e.stopPropagation(); click(); toSettings('start'); });
 
   function showPause() { hideAll(); showPauseBtns(false); show(scr.pause, true); }
-  pauseBtns.forEach((b) => b.addEventListener('click', () => { A.sfxUi(); game.pause(); }));
-  $('resume').addEventListener('click', () => { A.sfxUi(); hideAll(); showPauseBtns(true); game.resume(); });
-  $('restart').addEventListener('click', () => { A.sfxUi(); hideAll(); showPauseBtns(true); game.newMatch(); });
-  $('to-settings').addEventListener('click', () => { A.sfxUi(); toSettings('pause'); });
+  pauseBtns.forEach((b) => b.addEventListener('click', () => { click(); game.pause(); }));
+  $('resume').addEventListener('click', () => { click(); hideAll(); showPauseBtns(true); game.resume(); });
+  $('restart').addEventListener('click', () => { click(); hideAll(); showPauseBtns(true); game.newMatch(); });
+  $('to-settings').addEventListener('click', () => { click(); toSettings('pause'); });
   $('close-settings').addEventListener('click', () => {
-    A.sfxUi();
+    click();
     if (settingsFrom === 'pause') { hideAll(); showPauseBtns(false); show(scr.pause, true); }
     else toStart();
   });
   document.querySelectorAll('.rematch').forEach((b) => b.addEventListener('click', () => {
-    A.sfxUi(); hideAll(); showPauseBtns(true); game.newMatch();
+    click(); hideAll(); showPauseBtns(true); game.newMatch();
   }));
 
   /* ---------- реакции на игру ---------- */

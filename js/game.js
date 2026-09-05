@@ -5,7 +5,6 @@ import { getTheme } from './themes.js';
 import { createRenderer } from './render.js';
 import * as P from './physics.js';
 import * as A from './audio.js';
-import * as HAP from './haptics.js';
 import { attachInput } from './input.js';
 
 export function createGame(canvas, probe, hooks) {
@@ -50,7 +49,6 @@ export function createGame(canvas, probe, hooks) {
   function applySettings() {
     const s = S.get();
     A.setEnabled(s.sound);
-    HAP.setEnabled(s.haptics);
     if (world) world.maxSpeed = S.SPEEDS[s.speed].max;   // скорость применима сразу
     const want = getTheme(s.theme);
     document.body.className = want.bodyClass;
@@ -96,7 +94,6 @@ export function createGame(canvas, probe, hooks) {
     const w = score[0] === score[1] ? 0 : (score[0] > score[1] ? 1 : 2);
     setState('end');
     if (S.get().sound) A.sfxWin();
-    HAP.request(3);
     hooks.onEnd?.(w, score[0], score[1]);
   }
 
@@ -112,15 +109,12 @@ export function createGame(canvas, probe, hooks) {
     for (const e of events) {
       if (e.type === 'paddle') {
         A.sfxPaddle(e.power);
-        HAP.request();
         ring(e.x, e.y, e.player === 1 ? theme.p1 : theme.p2);
       } else if (e.type === 'wall') {
         if (e.power > 180) A.sfxWall(e.power);
-        if (e.power > 700) HAP.request();
         if (e.power > 400) ring(e.x, e.y, theme.id === 'ink' ? '#111' : '#ffffff');
       } else if (e.type === 'post') {
         A.sfxPost(e.power);
-        HAP.request();
         ring(e.x, e.y, theme.id === 'ink' ? '#111' : '#ffffff');
       } else if (e.type === 'goal') {
         onGoal(e.player);
@@ -137,7 +131,6 @@ export function createGame(canvas, probe, hooks) {
     if (S.get().flash) fx.goalFlash = 1;
     if (S.get().shake) fx.shake = 1;
     A.sfxGoal();
-    HAP.request(3);
     setState('goal');
     hooks.onGoal?.(player, score[0], score[1]);
   }

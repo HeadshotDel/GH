@@ -9,7 +9,6 @@ export const DEFAULTS = {
   minutes: 3,
   speed: 'normal',    // slow | normal | fast
   sound: true,
-  haptics: true,
   trail: true,
   flash: true,
   shake: true,
@@ -41,4 +40,4 @@ export function set(patch) {
 
 // «Все эффекты» — производное значение, а не отдельный флаг: его состояние
 // вычисляет ui.js по тем эффектам, что доступны на конкретном устройстве.
-export const FX_KEYS = ['sound', 'haptics', 'trail', 'flash', 'shake'];
+export const FX_KEYS = ['sound', 'trail', 'flash', 'shake'];

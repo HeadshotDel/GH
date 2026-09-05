@@ -1,25 +1,31 @@
-// navigator.vibrate в Safari на iOS не реализован ни в одной версии.
-// Единственный рабочий путь — системный тик переключателя
-// <input type="checkbox" switch> (iOS 17.4+) при клике по его лейблу.
+// Тактильный отклик на iOS: что удалось выяснить экспериментом.
 //
-// Ограничение, которое стоило отдельной отладки: iOS выдаёт этот тик только
-// когда клик случается в контексте пользовательского ввода. Вызов из
-// requestAnimationFrame — а игровой цикл живёт именно там — молча ничего не
-// делает, из-за чего вибрация работала в настройках и не работала в игре.
-// Поэтому удар по шайбе не вибрирует напрямую, а ставит запрос, который
-// сбрасывается из ближайшего обработчика касания: палец во время розыгрыша
-// движется постоянно, так что задержка меньше кадра.
+// navigator.vibrate в Safari не реализован ни в одной версии. Единственный
+// рабочий путь — системный тик переключателя <input type="checkbox" switch>
+// (iOS 17.4+) при клике по его лейблу. Но у него есть жёсткое условие,
+// которое и решило судьбу вибрации в этой игре.
+//
+// Замер на iPhone 15 Pro (design/haptics-test.html), семь контекстов:
+//   click ................................. есть
+//   touchend .............................. есть
+//   setTimeout через 300 мс после жеста ... есть
+//   requestAnimationFrame после жеста ..... есть
+//   pointerdown ........................... НЕТ
+//   setTimeout через 3 с после жеста ...... НЕТ
+//   pointermove во время движения пальца .. НЕТ
+//
+// Вывод: тик требует «права на отклик», которое выдаёт завершённый жест
+// (touchend/click) и которое живёт пару секунд. Начало касания его не даёт.
+// Пока палец прижат к экрану и скользит, ни одного touchend не происходит —
+// значит во время розыгрыша отклик невозможен в принципе. Поэтому удары
+// по шайбе и голы не вибрируют: не «не реализовано», а не даёт система.
+//
+// Остаётся то, что работает честно: тик на нажатиях кнопок.
 
 let label = null;
-let enabled = true;
 let supported = false;
 let last = 0;
-let pending = 0;
-let pendingAt = 0;
-
-const MIN_GAP = 45;     // чаще iOS всё равно душит
-const STALE = 250;      // запрос старше — уже не про этот удар, глушим
-const BURST_GAP = 70;
+const MIN_GAP = 45;   // чаще iOS всё равно душит
 
 export function init() {
   label = document.getElementById('haptic-label');
@@ -37,35 +43,13 @@ export function init() {
 }
 
 export function isSupported() { return supported; }
-export function setEnabled(v) { enabled = v; if (!v) pending = 0; }
 
-function fire() {
+// Вызывать только из обработчиков нажатия — в другом контексте система
+// промолчит, и это не лечится.
+export function tap() {
   if (!supported || !label) return false;
   const t = performance.now();
   if (t - last < MIN_GAP) return false;
   last = t;
   try { label.click(); return true; } catch (e) { return false; }
 }
-
-// Заявка на отклик из игрового цикла. n — сколько тиков подряд:
-// одним система сильнее ударить не даёт, гол набираем серией.
-export function request(n = 1) {
-  if (!enabled || !supported) return;
-  pending = Math.min(3, pending + n);
-  pendingAt = performance.now();
-  setTimeout(flush, 50);   // подстраховка на случай, если палец сейчас неподвижен
-}
-
-// Вызывается из обработчиков касания — это и есть нужный контекст ввода.
-export function flush() {
-  if (!pending) return;
-  if (performance.now() - pendingAt > STALE) { pending = 0; return; }
-  pending--;
-  fire();
-  if (pending) setTimeout(flush, BURST_GAP);
-}
-
-// Проверка из настроек: там мы уже внутри обработчика нажатия, бьём напрямую.
-// Намеренно тем же fire(), которым пользуется игра, — иначе кнопка снова
-// проверяла бы не тот путь.
-export function tapNow() { return fire(); }

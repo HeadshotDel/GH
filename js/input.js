@@ -2,8 +2,6 @@
 // коснулся первым; дальше палец может уходить куда угодно — бита останется
 // зажатой в своей половине.
 
-import * as HAP from './haptics.js';
-
 export function attachInput(canvas, getWorld, onFirstTouch, isPlayable) {
   const owner = [null, null]; // pointerId для верхнего и нижнего игрока
   let unlocked = false;
@@ -20,7 +18,6 @@ export function attachInput(canvas, getWorld, onFirstTouch, isPlayable) {
   }
 
   function down(e) {
-    HAP.flush();     // тик от удара выдаётся только из контекста ввода
     if (!unlocked) { unlocked = true; onFirstTouch(); }
     if (!isPlayable()) return;
     const i = playerFor(e.clientY);
@@ -31,7 +28,6 @@ export function attachInput(canvas, getWorld, onFirstTouch, isPlayable) {
   }
 
   function move(e) {
-    HAP.flush();
     for (let i = 0; i < 2; i++) {
       if (owner[i] === e.pointerId) { setTarget(i, e.clientX, e.clientY, false); return; }
     }
