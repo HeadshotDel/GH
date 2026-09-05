@@ -12,6 +12,21 @@ const PROFILES = {
 };
 const DEFAULT_ISLAND = { w: 125, h: 36.67, top: 11 };
 
+// Размеры биты и шайбы — вопрос баланса створа, а не вкуса. Забить можно
+// только если сумма их радиусов заметно меньше полуширины ворот: защитник,
+// вставший по центру, перекрывает ровно эту сумму. При бите 36 и шайбе 23
+// выходило 59 против полуширины 62 — ворота закрывались на 94%, и забить
+// было нельзя ни при какой точности. Нынешние пропорции ближе к настоящему
+// аэрохоккею (там перекрытие около 56%) и оставляют реальную цель по краям.
+// Функция чистая и без DOM — её же используют тесты, чтобы мерить игру
+// в тех размерах, в которых в неё играют.
+export function sizes(W) {
+  return {
+    puckR: Math.max(13, Math.min(20, W * 0.0435)),
+    paddleR: Math.max(22, Math.min(34, W * 0.0738)),
+  };
+}
+
 function readInset(probe, side) {
   const v = parseFloat(getComputedStyle(probe)[`padding${side}`]);
   return Number.isFinite(v) ? v : 0;
@@ -68,9 +83,7 @@ export function measure(probe) {
   // Зеркальная «пилюля» снизу — точное отражение острова.
   const pill = { x: island.x, y: H - island.top - island.h, w: island.w, h: island.h };
 
-  const puckR = Math.max(16, Math.min(26, W * 0.058));
-  const paddleR = Math.max(26, Math.min(42, W * 0.092));
-
+  const { puckR, paddleR } = sizes(W);
   return { W, H, safe, island, field, goal, pill, puckR, paddleR, dpr: Math.min(3, window.devicePixelRatio || 1) };
 }
 

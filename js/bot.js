@@ -10,14 +10,15 @@
 // человека. Медленный бот бьёт слабо просто потому, что медленно машет.
 
 // guard — ошибка выбора места в обороне, bank — вероятность не заметить
-// отскок от борта. Именно они решают, пробиваем ли бот: бита радиусом 36
-// вместе с шайбой перекрывает 59 px створа при его полуширине 62, поэтому
-// правильно ставший вратарь непробиваем в принципе, каким бы медленным ни был.
-// Ворота открывает не медлительность, а неверно выбранное место.
+// отскок от борта. Именно они решают, пробиваем ли бот: защитник вместе
+// с шайбой перекрывает сумму их радиусов, поэтому правильно вставший вратарь
+// непробиваем каким угодно медленным. Ворота открывает не медлительность,
+// а неверно выбранное место — значения guard подобраны вокруг этой суммы
+// (см. sizes() в js/device.js), и при смене размеров их надо пересчитывать.
 export const LEVELS = {
-  easy:   { speed: 760,  react: 0.26,  aim: 58, guard: 110, bank: 0.82, advance: 0.55, lapse: 0.320 },
-  normal: { speed: 1150, react: 0.13,  aim: 34, guard: 61,  bank: 0.49, advance: 0.74, lapse: 0.160 },
-  hard:   { speed: 1520, react: 0.085, aim: 20, guard: 59,  bank: 0.19, advance: 0.94, lapse: 0.055 },
+  easy:   { speed: 760,  react: 0.26,  aim: 46, guard: 62, bank: 0.72, advance: 0.55, lapse: 0.280 },
+  normal: { speed: 1150, react: 0.13,  aim: 28, guard: 44, bank: 0.42, advance: 0.74, lapse: 0.140 },
+  hard:   { speed: 1520, react: 0.085, aim: 16, guard: 42, bank: 0.16, advance: 0.94, lapse: 0.050 },
 };
 
 // Куда шайба придёт на высоту targetY с учётом отражений от боковых бортов.
@@ -88,11 +89,8 @@ export function createBot(level, rng = Math.random, side = 0) {
     }
 
     const half = field.cy - field.top;
+    const back = paddleR + puckR;
     const homeY = ownY + s * (paddleR + half * 0.04);
-    // «Своя» шайба — не та, что за центральной линией, а та, до которой бита
-    // физически дотягивается: центр биты доходит до линии, плюс сумма радиусов.
-    // По половинам получалась мёртвая полоса у центра, где шайбу не считал
-    // своей никто, и розыгрыш вставал.
     const ourHalf = (p.y - field.cy) * s < puckR * 0.9;
     const incoming = p.vy * s < -25;
     const slow = Math.hypot(p.vx, p.vy) < 70;
@@ -105,86 +103,88 @@ export function createBot(level, rng = Math.random, side = 0) {
       ? field.cy - s * paddleR
       : ownY + s * (paddleR + half * cfg.advance);
 
+    // Целимся не в центр ворот, а в дальний от чужой биты край створа:
+    // защитник вместе с шайбой перекрывает изрядную часть створа, и бросок
+    // в середину упирается в него всегда.
+    const foeX = w.paddles[1 - side].x;
+    const gL = w.g.goal.x0 + puckR + 4;
+    const gR = w.g.goal.x1 - puckR - 4;
+    const gx = (Math.abs(foeX - gL) > Math.abs(foeX - gR) ? gL : gR) + aim;
+
+    let ux, uy, sx, sy;
+    const aimAt = (targetX) => {
+      const d = Math.hypot(targetX - p.x, foeY - p.y) || 1;
+      ux = (targetX - p.x) / d; uy = (foeY - p.y) / d;
+      sx = p.x - ux * back * 1.1; sy = p.y - uy * back * 1.1;
+    };
+    aimAt(gx);
+    // Шайба у борта: чтобы послать её в створ, встать нужно было бы за
+    // пределами поля. Бита туда не дойдёт, окажется не с той стороны и
+    // вдавит шайбу в борт. Тогда бьём вдоль борта на чужую сторону.
+    if (sx < field.left + paddleR || sx > field.right - paddleR) aimAt(p.x);
+    sx = Math.min(field.right - paddleR, Math.max(field.left + paddleR, sx));
+    sy = s > 0 ? Math.max(ownY + s * paddleR, sy) : Math.min(ownY + s * paddleR, sy);
+
+    const canSetUp = (p.y - sy) * s > 0;      // за шайбу вообще можно встать
+    const padBehind = (p.y - pad.y) * s > 0;  // бита уже со стороны своих ворот
+    const inMouth = p.x > w.g.goal.x0 && p.x < w.g.goal.x1;
+    const clear = back + 12;
+    const away = pad.x <= p.x ? -1 : 1;
+    let wx = p.x + away * clear;
+    if (wx < field.left + paddleR || wx > field.right - paddleR) wx = p.x - away * clear;
+
     let tx, ty;
 
-    if (ourHalf && !incoming) {
-      // Атака: зайти за шайбу и продавить её к чужим воротам.
-      const back = paddleR + puckR;
-      // Целимся не в центр ворот, а в дальний от чужой биты край створа:
-      // защитник вместе с шайбой перекрывает 59 px при полуширине ворот 62,
-      // поэтому бросок в центр упирается в него всегда.
-      const foeX = w.paddles[1 - side].x;
-      const gL = w.g.goal.x0 + puckR + 4;
-      const gR = w.g.goal.x1 - puckR - 4;
-      const open = Math.abs(foeX - gL) > Math.abs(foeX - gR) ? gL : gR;
-      const gx = open + aim;
-      let ux, uy, sx, sy;
-      const aimAt = (targetX) => {
-        const d = Math.hypot(targetX - p.x, foeY - p.y) || 1;
-        ux = (targetX - p.x) / d; uy = (foeY - p.y) / d;
-        sx = p.x - ux * back * 1.1; sy = p.y - uy * back * 1.1;
-      };
-      aimAt(gx);
-
-      // Шайба у борта: чтобы послать её к центру ворот, встать нужно было бы
-      // за пределами поля. Бита туда не дойдёт, окажется не с той стороны и
-      // вдавит шайбу в борт. Тогда бьём честно — вдоль борта на чужую сторону.
-      if (sx < field.left + paddleR || sx > field.right - paddleR) aimAt(p.x);
-
-      // Точку замаха зажимаем в достижимую зону: за лицевую линию бита не
-      // заходит, но встать чуть ближе к воротам, чем хотелось, обычно можно —
-      // и этого хватает, чтобы толкнуть шайбу от своих ворот, а не в них.
-      sx = Math.min(field.right - paddleR, Math.max(field.left + paddleR, sx));
-      sy = s > 0 ? Math.max(ownY + s * paddleR, sy) : Math.min(ownY + s * paddleR, sy);
-
-      // «За шайбой» — значит между ней и своими воротами. Если даже после
-      // зажатия бита оказывается с внешней стороны, толкать вдоль ворот
-      // нельзя: это прямой автогол.
-      const behind = (p.y - sy) * s > 0;
-      const inMouth = p.x > w.g.goal.x0 && p.x < w.g.goal.x1;
-
-      if (!behind && inMouth) {
-        // Шайба в собственном створе, зайти за неё некуда. Выталкиваем вбок:
-        // заходим с максимальным боковым выносом, тогда удар идёт почти
-        // поперёк и шайба покидает створ раньше, чем доходит до линии.
-        const away = p.x < field.cx ? -1 : 1;
-        const sideX = p.x - away * back * 0.97;
-        const sideY = ownY + s * paddleR;
+    if (ourHalf && canSetUp && !padBehind && !striking) {
+      // ОБХОД. Шайба между битой и нашими воротами. Любое прямое движение —
+      // хоть к точке замаха, хоть на линию перехвата — пройдёт через шайбу и
+      // втолкнёт её в собственную сетку. Именно так бот забивал себе.
+      // Обходим по ломаной: сперва расходимся по горизонтали на сумму
+      // радиусов, потом уходим по вертикали за шайбу. Пока зазор по x больше
+      // суммы радиусов, столкновение невозможно геометрически.
+      if (Math.abs(pad.x - p.x) < clear) { tx = wx; ty = pad.y; }
+      else { tx = pad.x; ty = ownY + s * paddleR; }
+    } else if (ourHalf && !incoming && !canSetUp && inMouth) {
+      // Шайба в собственном створе, зайти за неё некуда. Выталкиваем вбок с
+      // максимальным боковым выносом: удар идёт почти поперёк, и шайба
+      // покидает створ раньше, чем доходит до линии. К позиции подходим тоже
+      // в обход, иначе толкнём её в ворота по дороге.
+      const sideX = p.x - away * back * 0.97;
+      const sideY = ownY + s * paddleR;
+      if (!stalled) {
+        // Шайба ещё движется в нашем створе, а зайти за неё нельзя. Любой
+        // контакт с этой стороны толкнёт её в сетку, поэтому не трогаем —
+        // движущаяся шайба разрешит ситуацию сама. Ждём сбоку наготове.
+        striking = false;
+        tx = p.x + away * (back + 10); ty = sideY;
+      } else if (!striking && Math.abs(pad.x - p.x) < back * 0.9) { tx = wx; ty = pad.y; }
+      else {
         if (!striking && Math.hypot(pad.x - sideX, pad.y - sideY) < paddleR * 0.6) {
           striking = true; strikeUntil = now + 0.3;
         }
         if (striking && now > strikeUntil) striking = false;
         if (striking) { tx = p.x + away * back * 0.6; ty = sideY; }
         else { tx = sideX; ty = sideY; }
-      } else if (!behind) {
-        // Шайба в углу у своих ворот, но мимо створа: забить себе нельзя,
-        // поэтому просто выбиваем её ударом с отскоком от бортов, чередуя
-        // удар и отход — прижатая битой шайба отскочить не сможет.
-        if (!striking && now > strikeUntil + 0.28) { striking = true; strikeUntil = now + 0.32; }
-        if (striking && now > strikeUntil) striking = false;
-        if (striking) {
-          const d2 = Math.hypot(p.x - pad.x, p.y - pad.y) || 1;
-          tx = p.x + ((p.x - pad.x) / d2) * back * 0.7;
-          ty = p.y + ((p.y - pad.y) / d2) * back * 0.7;
-        } else {
-          tx = p.x + (field.cx - p.x) * 0.35;
-          ty = p.y + s * back * 1.4;
-        }
+      }
+    } else if (ourHalf && !incoming && !canSetUp) {
+      // Шайба в углу у своих ворот, но мимо створа: забить себе нельзя,
+      // поэтому выбиваем ударом с отскоком от бортов, чередуя удар и отход —
+      // прижатая битой шайба отскочить не сможет.
+      if (!striking && now > strikeUntil + 0.28) { striking = true; strikeUntil = now + 0.32; }
+      if (striking && now > strikeUntil) striking = false;
+      if (striking) {
+        const d2 = Math.hypot(p.x - pad.x, p.y - pad.y) || 1;
+        tx = p.x + ((p.x - pad.x) / d2) * back * 0.7;
+        ty = p.y + ((p.y - pad.y) / d2) * back * 0.7;
       } else {
-        if (Math.hypot(pad.x - sx, pad.y - sy) < paddleR * 0.5) striking = true;
-        if (striking) { tx = p.x + ux * back * 0.5; ty = p.y + uy * back * 0.5; }
-        else { tx = sx; ty = sy; }
+        tx = p.x + (field.cx - p.x) * 0.35;
+        ty = p.y + s * back * 1.4;
       }
-
-      // Обход. Бита едет к точке замаха по прямой, и если шайба стоит на этом
-      // пути, она получит толчок ровно в наши ворота. Человек в такой ситуации
-      // обходит шайбу сбоку — сначала уходим по горизонтали за её радиус и
-      // только потом подтягиваемся по вертикали.
-      if (!striking && (pad.y - p.y) * s > 0 && Math.abs(pad.x - p.x) < back + 6) {
-        const side = pad.x < p.x ? -1 : 1;
-        tx = p.x + side * (back + 14);
-        ty = pad.y;
-      }
+    } else if (ourHalf && !incoming) {
+      // Атака: зайти за шайбу и продавить её к чужим воротам.
+      if (Math.hypot(pad.x - sx, pad.y - sy) < paddleR * 0.5) striking = true;
+      if (striking) { tx = p.x + ux * back * 0.5; ty = p.y + uy * back * 0.5; }
+      else { tx = sx; ty = sy; }
     } else if (incoming) {
       striking = false;
       // Оборона: встречаем шайбу там, где она пересечёт линию обороны.

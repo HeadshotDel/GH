@@ -143,6 +143,41 @@ function ownGoals(level, tries = 60) {
   return own / tries;
 }
 
+
+// Бита у центральной линии, шайба между ней и воротами бота. Тут бот и забивал
+// себе с первого удара: он шёл к точке замаха напрямик и толкал шайбу в свою
+// сетку по дороге. Считаем отдельно позиции, из которых выйти в принципе можно
+// (шайба дальше от линии, чем сумма радиусов) — на них автоголов быть не должно.
+function ownGoalsFromBehind(level, tries = 120) {
+  let playable = 0, ownPlayable = 0;
+  for (let k = 0; k < tries; k++) {
+    const rng = seeded(k * 977 + 3);
+    const w = createWorld(g, 2200);
+    const bot = createBot(level, rng, 0);
+    centerPaddles(w);
+    w.paddles[0].x = w.paddles[0].tx = 60 + rng() * (g.W - 120);
+    w.paddles[0].y = w.paddles[0].ty = field.cy - g.paddleR - rng() * 30;
+    w.puck.x = g.puckR + 10 + rng() * (g.W - 2 * g.puckR - 20);
+    w.puck.y = field.top + 30 + rng() * (field.cy - field.top - 120);
+    w.puck.vx = (rng() - 0.5) * 120;
+    w.puck.vy = (rng() - 0.5) * 120;
+    w.paddles[1].x = w.paddles[1].tx = 40;
+    w.paddles[1].y = w.paddles[1].ty = field.bottom - 40;
+    const deep = w.puck.y < field.top + g.paddleR + g.puckR;
+    if (!deep) playable++;
+    const ev = [];
+    for (let i = 0; i < 60 * 8; i++) {
+      bot.update(w, 1 / 60, i / 60);
+      ev.length = 0;
+      stepFrame(w, 1 / 60, ev);
+      const gl = ev.find((e) => e.type === 'goal');
+      if (gl) { if (gl.player === 2 && !deep) ownPlayable++; break; }
+      if (w.puck.y > field.cy) break;
+    }
+  }
+  return ownPlayable / playable;
+}
+
 console.log('--- серии по 9 матчей до 7 голов ---');
 const pairs = [['easy','easy'], ['normal','normal'], ['hard','hard'],
                ['hard','easy'], ['hard','normal'], ['normal','easy']];
@@ -166,6 +201,13 @@ const own = {};
 for (const level of ['easy', 'normal', 'hard']) {
   own[level] = ownGoals(level);
   console.log(`  ${level.padEnd(7)} забивает себе в ${(own[level] * 100).toFixed(0)}% случаев`);
+}
+
+console.log('\n--- бита у центра, шайба между ней и своими воротами ---');
+const behind = {};
+for (const level of ['easy', 'normal', 'hard']) {
+  behind[level] = ownGoalsFromBehind(level);
+  console.log(`  ${level.padEnd(7)} автоголов с играбельных позиций: ${(behind[level] * 100).toFixed(1)}%`);
 }
 
 console.log('');
@@ -195,6 +237,8 @@ ok('лёгкому забить легко', save.easy < 0.68, `берёт ${(sa
 ok('сложный не глухая стена — забить можно', save.hard < 0.94, `берёт ${(save.hard * 100).toFixed(0)}%`);
 ok('бот почти не забивает себе', Object.values(own).every((v) => v <= 0.12),
    `худший ${(Math.max(...Object.values(own)) * 100).toFixed(0)}%`);
+ok('не забивает себе, обходя шайбу у своих ворот', Object.values(behind).every((v) => v <= 0.04),
+   `худший ${(Math.max(...Object.values(behind)) * 100).toFixed(1)}%`);
 ok('сложный всё же серьёзен', save.hard > 0.85, `берёт ${(save.hard * 100).toFixed(0)}%`);
 
 console.log(`\n${pass} ok, ${fail} fail`);

@@ -1,6 +1,8 @@
 // Общая обвязка для тестов: геометрия iPhone 15 Pro без браузера
 // и детерминированный генератор, чтобы прогоны были воспроизводимы.
 
+import { sizes } from '../js/device.js';
+
 export function makeGeom(W = 393, H = 852, islandW = 125) {
   const field = {
     top: 59, bottom: 793, left: 0, right: W,
@@ -14,7 +16,7 @@ export function makeGeom(W = 393, H = 852, islandW = 125) {
     island: { w: islandW, h: 36.67, top: 11, x: (W - islandW) / 2, get bottom() { return this.top + this.h; } },
     goal: { w: islandW, x0: (W - islandW) / 2, x1: (W + islandW) / 2 },
     pill: { x: (W - islandW) / 2, y: H - 11 - 36.67, w: islandW, h: 36.67 },
-    puckR: 23, paddleR: 36, dpr: 3,
+    ...sizes(W), dpr: 3,
   };
 }
 
