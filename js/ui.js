@@ -64,6 +64,7 @@ export function createUI(game) {
     $('set-goals').hidden = s.mode !== 'goals';
     $('set-minutes').hidden = s.mode !== 'time';
     for (const [k, id] of Object.entries(swIds)) $(id).checked = s[k];
+    $('test-haptic').disabled = !HAP.isSupported() || !s.haptics;
     $('set-fx-master').checked = fxKeys().every((k) => s[k]);
     refreshModeLabels();
   }
@@ -80,7 +81,7 @@ export function createUI(game) {
         S.set({ [k]: e.target.checked });
         game.applySettings();
         paint();
-        if (k === 'haptics' && e.target.checked) HAP.tap(0);
+        if (k === 'haptics' && e.target.checked) HAP.tapNow();
       });
     }
     $('set-fx-master').addEventListener('change', (e) => {
@@ -97,12 +98,15 @@ export function createUI(game) {
       $('test-haptic').disabled = true;
       S.set({ haptics: false });          // иначе тумблер горит, а отклика нет
     } else {
-      note.textContent = 'слабый системный отклик — сильнее iOS не даёт';
+      note.textContent = 'короткий системный тик — сильнее iOS не даёт';
     }
+    // Раньше кнопка принудительно включала вибрацию и била по API напрямую —
+    // и потому «работала» даже когда игра молчала. Теперь она гаснет вместе
+    // с тумблером и использует тот же fire(), что и удары по шайбе.
     $('test-haptic').addEventListener('click', () => {
-      HAP.setEnabled(true);
-      HAP.burst(3, 90);
-      setTimeout(() => HAP.setEnabled(S.get().haptics), 400);
+      HAP.tapNow();
+      setTimeout(() => HAP.tapNow(), 90);
+      setTimeout(() => HAP.tapNow(), 180);
     });
   }
 
